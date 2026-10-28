@@ -1,31 +1,35 @@
-// Service Worker：接收网页推送并展示通知
-self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
-
-self.addEventListener('push', (event) => {
-  let data = { title: '情侣待办', body: '有一个提醒' }
-  try {
-    if (event.data) data = event.data.json()
-  } catch (e) {}
-  const options = {
-    body: data.body || '',
-    icon: './icon.svg',
-    badge: './icon.svg',
-    tag: data.tag || 'couple-todo',
-    data: { url: data.url || '/' },
-  }
-  event.waitUntil(self.registration.showNotification(data.title || '情侣待办', options))
+/* 自毁型 Service Worker
+ * 旧版站点注册过 SW，会缓存旧页面导致返回访客看不到新版。
+ * 本文件替换旧 sw.js：安装后立即接管、删除所有缓存、注销自身。
+ */
+self.addEventListener('install', () => {
+  self.skipWaiting()
 })
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close()
-  const target = (event.notification.data && event.notification.data.url) || '/'
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
-      for (const w of windows) {
-        if ('focus' in w) return w.focus()
+    (async () => {
+      try {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((k) => caches.delete(k)))
+      } catch (e) {
+        /* ignore */
       }
-      if (self.clients.openWindow) return self.clients.openWindow(target)
-    }),
+      try {
+        await self.registration.unregister()
+      } catch (e) {
+        /* ignore */
+      }
+      try {
+        const clientsList = await self.clients.matchAll({ type: 'window' })
+        clientsList.forEach((c) => c.navigate(c.url))
+      } catch (e) {
+        /* ignore */
+      }
+    })()
   )
+})
+
+self.addEventListener('fetch', () => {
+  /* 不拦截任何请求，全部走网络 */
 })
