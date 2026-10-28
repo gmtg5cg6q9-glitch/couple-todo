@@ -1,12 +1,12 @@
 {
-  "name": "情侣待办",
-  "short_name": "情侣待办",
-  "description": "两人共享的实时待办",
+  "name": "我们的小日子",
+  "short_name": "我们的小日子",
+  "description": "异地情侣共享的实时待办",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ff5a8a",
+  "background_color": "#F2F8FD",
+  "theme_color": "#56A7E6",
   "icons": [
     {
       "src": "./icon.svg",
