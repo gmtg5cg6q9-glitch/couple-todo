@@ -9,8 +9,8 @@ self.addEventListener('push', (event) => {
   } catch (e) {}
   const options = {
     body: data.body || '',
-    icon: '/icon.svg',
-    badge: '/icon.svg',
+    icon: './icon.svg',
+    badge: './icon.svg',
     tag: data.tag || 'couple-todo',
     data: { url: data.url || '/' },
   }
