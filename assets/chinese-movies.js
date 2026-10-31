@@ -64,7 +64,7 @@ export function OnlineMovies(){
   const ranked=query?catalog:rankRecommendations(catalog,watchlist,preferences);
   const list=ranked.filter(movie=>(genre==='全部'||movie.genre.includes(genre))&&(movie.title+' '+movie.genre+' '+movie.year+' '+(movie.cast||'')+' '+(movie.region||'')).toLowerCase().includes(query.trim().toLowerCase()));
   const listKey=JSON.stringify(list.map(movie=>[movieIdentity(movie),movie.poster,movie.title,movie.year,movie.genre]));
-  const globeItems=R.useMemo(()=>list.map((movie,index)=>({image:movie.poster||api.tile(movie,index),title:movie.title,description:`${movie.year} · ${movie.genre}`})),[listKey]);
+  const globeItems=R.useMemo(()=>list.map((movie,index)=>({image:api.tile(movie,index),title:movie.title,description:`${movie.year} · ${movie.genre}`})),[listKey]);
   const current=list[Math.min(active,list.length-1)];
   const genres=['全部',...new Set(catalog.flatMap(movie=>movie.genre.split(/\s*\/\s*/)).filter(value=>value&&value!=='国内热映'))].slice(0,10);
   R.useEffect(()=>{setActive(0);},[channel,query,genre]);
