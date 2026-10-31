@@ -1,0 +1,22 @@
+import {normalizeChart,rankRecommendations,loadOnlineMovies} from '../assets/online-movies.js';
+import {validateConnection,validPublicKey,decodeInvite} from '../assets/live.js';
+const assert=(value,message)=>{if(!value)throw Error(message);};
+const values=new Map();globalThis.localStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)};
+let checks=0;function test(fn){fn();checks++;}
+const feed={updated:{label:'2026-10-31T07:00:00Z'},entry:[{'im:name':{label:'A film'},id:{label:'https://itunes.apple.com/us/movie/a/id1',attributes:{'im:id':'1'}},'im:releaseDate':{label:'2026-01-01'},'im:image':[{label:'https://example.com/115x170bb.png'}],category:{attributes:{label:'Romance'}},summary:{label:'A story'}}]};
+const films=normalizeChart(feed);
+test(()=>assert(films[0].id==='apple-1'&&films[0].genre==='爱情','normalize identities and genres'));
+test(()=>assert(films[0].poster.endsWith('300x450bb.png'),'poster resolution'));
+test(()=>assert(normalizeChart({entry:[{}]}).length===0,'reject incomplete chart rows'));
+test(()=>assert(rankRecommendations(films,[{id:'apple-1',title:'A film',status:'watched'}]).length===0,'hide watched'));
+test(()=>assert(rankRecommendations([...films,{id:'b',title:'B',genre:'喜剧'}],[],['喜剧'])[0].id==='b','prefer chosen genres'));
+let calls=0;const fetcher=async()=>{calls++;return {ok:true,json:async()=>({feed})};};
+await loadOnlineMovies({fetcher,now:100000});await loadOnlineMovies({fetcher,now:100001});
+test(()=>assert(calls===1,'cache avoids duplicate requests'));
+await loadOnlineMovies({fetcher,now:100002,force:true});test(()=>assert(calls===2,'manual refresh bypasses cache'));
+test(()=>assert(validPublicKey('sb_publishable_abcdefghijklmnopqrstuvwxyz'),'public key accepted'));
+test(()=>assert(!validPublicKey('sb_secret_abcdefghijklmnopqrstuvwxyz'),'secret key rejected'));
+test(()=>{let rejected=false;try{validateConnection({url:'http://bad',anon:'sb_publishable_abcdefghijklmnopqrstuvwxyz',coupleId:'1234567890123456'});}catch{rejected=true;}assert(rejected,'insecure URL rejected');});
+test(()=>{let rejected=false;try{validateConnection({url:'https://example.supabase.co',anon:'sb_publishable_abcdefghijklmnopqrstuvwxyz',coupleId:'short'});}catch{rejected=true;}assert(rejected,'weak space code rejected');});
+test(()=>assert(decodeInvite('#pair=invalid')===null,'malformed invitation rejected'));
+console.log({passed:checks,suite:'online movies and pairing'});
