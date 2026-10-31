@@ -1,9 +1,9 @@
 {
     "name":  "our-little-days",
-    "version":  "0.5.0",
+    "version":  "0.6.0",
     "private":  true,
     "type":  "module",
     "scripts":  {
-                    "test":  "node tests/regression.mjs \u0026\u0026 node tests/sync.mjs \u0026\u0026 node tests/movies-live.mjs"
+                    "test":  "node tests/regression.mjs \u0026\u0026 node tests/sync.mjs \u0026\u0026 node tests/movies-live.mjs \u0026\u0026 node tests/chinese-movies.mjs"
                 }
 }
