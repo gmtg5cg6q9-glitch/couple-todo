@@ -1,4 +1,6 @@
-import {configureFeatures,TodoPage,ProfileSettings,MovieActions,Watchlist,StatusNotice,useCollection,profile,dayNumber,nextAnnual,announce} from "./features.js";
+import {configureRealtime,RealtimeHub,CloudPanel,subscribeSpace,deviceId,decodeInvite} from "./live.js";
+import {configureMovies,OnlineMovies} from "./online-movies.js";
+import {configureFeatures,TodoPage,ProfileSettings,MovieActions,Watchlist,StatusNotice,useCollection,SharedData,useSharedWatchlist,profile,dayNumber,nextAnnual,announce} from "./features.js";
 (function () {
   const e = document.createElement("link").relList;
   if (e && e.supports && e.supports("modulepreload")) return;
@@ -22112,11 +22114,10 @@ function Hs() {
   }
   return as;
 }
-function n1(t) {
-  ((as = t), (hi = null));
-  try {
-    localStorage.setItem($0, JSON.stringify(t));
-  } catch {}
+function n1(t){
+  localStorage.setItem($0,JSON.stringify(t));
+  const previous=hi;as=t;hi=null;cloudReady=null;previous?.removeAllChannels();
+  window.dispatchEvent(new Event('little-days-config'));
 }
 function ea() {
   const t = Hs();
@@ -22129,14 +22130,18 @@ function Kr() {
   return (
     (hi = e1(t.url, t.anon, {
       realtime: { params: { eventsPerSecond: 5 } },
-      auth: { persistSession: !1, autoRefreshToken: !1 },
+      auth: { persistSession: true, autoRefreshToken: true },
     })),
     hi
   );
 }
-function wr() {
-  var t;
-  return ((t = Hs()) == null ? void 0 : t.coupleId) || "default-couple";
+function wr(){return Hs()?.spaceId||Hs()?.coupleId||'default-couple';}
+let cloudReady=null;
+async function ensureCloud(){
+  if(!ea())return;
+  if(!Hs()?.secure)return;
+  if(!cloudReady)cloudReady=(async()=>{const {data,error}=await Kr().auth.getSession();if(error)throw error;if(!data.session){const result=await Kr().auth.signInAnonymously();if(result.error)throw result.error;}return true;})().catch(error=>{cloudReady=null;throw error;});
+  return cloudReady;
 }
 function D0() {
   var t;
@@ -22147,98 +22152,48 @@ function U0() {
   return ((t = Hs()) == null ? void 0 : t.tmdbKey) || "";
 }
 const rl = "couple_rows",
-  Ki = "couple-photos";
-async function Io(kind) {
-    const client=Kr(); if(!client)return [];
-    const {data,error}=await client.from(rl).select('id,payload,updated_at').eq('couple_id',wr()).eq('kind',kind);
-    if(error)throw error;
-    return [...new Map((data||[]).sort((a,b)=>String(a.updated_at).localeCompare(String(b.updated_at))).map(row=>[row.payload.id,{...row.payload}])).values()];
-  }
-async function $r(t, e) {
-  const n = Kr();
-  if (!n) return;
-  const { error: r } = await n
-    .from(rl)
-    .upsert(
-      {
-        id: wr()+":"+t+":"+e.id,
-        couple_id: wr(),
-        kind: t,
-        payload: e,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "id" },
-    );
-  if(r)throw r;
+  Ki = "couple-photos-private";
+async function Io(kind){
+  await ensureCloud();const client=Kr();if(!client)return [];
+  const {data,error}=await client.from(rl).select('id,payload,updated_at,deleted').eq('couple_id',wr()).eq('kind',kind).abortSignal(AbortSignal.timeout(10000));
+  if(error)throw error;
+  return [...new Map((data||[]).sort((a,b)=>String(a.updated_at).localeCompare(String(b.updated_at))).map(row=>[row.payload.id,row])).values()].filter(row=>!row.deleted).map(row=>({...row.payload}));
 }
-async function B0(t, e) {
-  const n = Kr();
-  if (!n) return;
-  const { error: r } = await n
-    .from(rl)
-    .delete()
-    .in("id", [e,wr()+":"+t+":"+e])
-    .eq("couple_id", wr()).eq("kind",t);
-  if(r)throw r;
+async function $r(kind,item){
+  await ensureCloud();const client=Kr();if(!client)return;
+  const row={id:wr()+':'+kind+':'+item.id,couple_id:wr(),kind,payload:{...item,_actor:deviceId()},updated_at:new Date().toISOString()};
+  if(Hs()?.secure)row.deleted=false;
+  const {error}=await client.from(rl).upsert(row,{onConflict:'id'}).abortSignal(AbortSignal.timeout(10000));if(error)throw error;
 }
-function z0(t, e) {
-  const n = Kr();
-  if (!n) return () => {};
-  const r = n
-    .channel(`couple-${wr()}-${t}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: rl,
-        filter: `couple_id=eq.${wr()}`,
-      },
-      () => e(),
-    )
-    .subscribe();
-  return () => {
-    n.removeChannel(r);
-  };
+async function B0(kind,id){
+  await ensureCloud();const client=Kr();if(!client)return;
+  let query;
+  if(Hs()?.secure)query=client.from(rl).upsert({id:wr()+':'+kind+':'+id,couple_id:wr(),kind,payload:{id,_actor:deviceId()},deleted:true,updated_at:new Date().toISOString()},{onConflict:'id'});
+  else query=client.from(rl).delete().in('id',[id,wr()+':'+kind+':'+id]).eq('couple_id',wr()).eq('kind',kind);
+  const {error}=await query.abortSignal(AbortSignal.timeout(10000));if(error)throw error;
 }
+function z0(kind,callback){return subscribeSpace(kind,callback);}
+
 function Xc(t) {
   return `${wr()}/${t}`;
 }
-async function nf() {
-  const t = Kr();
-  if (!t) return [];
-  const { data: e, error: n } = await t.storage
-    .from(Ki)
-    .list(wr(), { limit:1000, sortBy: { column: "created_at", order: "desc" } });
-  return n
-    ? (()=>{throw n})()
-    : (e || []).map((r) => {
-        const s = `${wr()}/${r.name}`,
-          { data: i } = t.storage.from(Ki).getPublicUrl(s);
-        return {
-          id: r.name,
-          name: r.name,
-          url: i.publicUrl,
-          createdAt: new Date(r.created_at || Date.now()).getTime(),
-        };
-      });
+async function nf(){
+  await ensureCloud();const client=Kr();if(!client)return [];
+  const bucket=Hs()?.secure?Ki:'couple-photos';
+  const {data,error}=await client.storage.from(bucket).list(wr(),{limit:1000,sortBy:{column:'created_at',order:'desc'}});if(error)throw error;
+  const names=(data||[]).filter(row=>row.id).map(row=>wr()+'/'+row.name);
+  let urls=[];
+  if(Hs()?.secure){if(names.length){const signed=await client.storage.from(bucket).createSignedUrls(names,3600);if(signed.error)throw signed.error;urls=signed.data.map(row=>row.signedUrl);}}
+  else urls=names.map(name=>client.storage.from(bucket).getPublicUrl(name).data.publicUrl);
+  return (data||[]).filter(row=>row.id).map((row,index)=>({id:row.name,name:row.name,url:urls[index],createdAt:new Date(row.created_at||Date.now()).getTime()}));
 }
-async function r1(t, e, n) {
-  const r = Kr();
-  if (!r) return null;
-  const { error: s } = await r.storage
-    .from(Ki)
-    .upload(Xc(t), e, { contentType: n, upsert: !0, cacheControl: "3600" });
-  if(s)throw s;
-  const { data: i } = r.storage.from(Ki).getPublicUrl(Xc(t));
-  return (i == null ? void 0 : i.publicUrl) || null;
+async function r1(id,blob,type){
+  await ensureCloud();const client=Kr();if(!client)return null;const bucket=Hs()?.secure?Ki:'couple-photos';
+  const {error}=await client.storage.from(bucket).upload(Xc(id),blob,{contentType:type,upsert:true});if(error)throw error;
+  await $r('photos',{id,name:blob.name||id,createdAt:Date.now()});return true;
 }
-async function rf(t) {
-  const e = Kr();
-  if (!e) return;
-  const { error: n } = await e.storage.from(Ki).remove([Xc(t)]);
-  if(n)throw n;
-}
+async function rf(id){await ensureCloud();const client=Kr();if(!client)return;const {error}=await client.storage.from(Hs()?.secure?Ki:'couple-photos').remove([Xc(id)]);if(error)throw error;await B0('photos',id);}
+
 const F0 = "couple-todo-v2",
   s1 = [
     { id: "s1", text: "一起看一部电影 🍿", done: !1, cat: "date" },
@@ -23116,7 +23071,7 @@ function q0() {
     }, [s]);
   b.useEffect(() => {
     i().catch(()=>announce("照片加载失败，请检查云端配置或设备存储"));
-    const timer=s?setInterval(()=>i().catch(()=>{}),15000):null;return()=>clearInterval(timer);
+    const timer=s?setInterval(()=>i().catch(()=>{}),15000):null;const remote=event=>{if(s&&(!event.detail?.kind||event.detail.kind==="photos"))i().catch(()=>{});};window.addEventListener("little-days-remote",remote);return()=>{clearInterval(timer);window.removeEventListener("little-days-remote",remote);};
   }, [i,s]);
   const a = b.useCallback(
       async (u, d = "") => {
@@ -27993,6 +27948,7 @@ function F2() {
     [x, _] = b.useState(ea());
   function m() {
     const g = {
+      ...Hs(),
       enabled: e && !!r && !!i,
       url: r.trim(),
       anon: i.trim(),
@@ -28012,121 +27968,12 @@ function F2() {
           o.jsx("h2", { className: "view-title", children: "设置" }),
           o.jsx("p", {
             className: "view-sub",
-            children: "我们的小日子 · v0.4",
+            children: "我们的小日子 · v0.5",
           }),
         ],
       }),
       o.jsx(ProfileSettings, {}),
-      o.jsxs("div", {
-        className: "set-block",
-        children: [
-          o.jsx("div", {
-            className: "set-name",
-            children: "☁️ 云端同步（双人实时）",
-          }),
-          o.jsxs("p", {
-            className: "set-desc",
-            children: [
-              "填入免费的 Supabase 项目信息后，待办、纪念日会自动实时同步到两台手机， 照片墙共享同一个云端相册。两端填",
-              o.jsx("strong", { children: "相同的共享口令" }),
-              "即视为同一个空间。 不填则保持纯本地版，功能照常使用。",
-            ],
-          }),
-          o.jsxs("div", {
-            className: "set-row",
-            style: { borderBottom: "none", paddingBottom: 0 },
-            children: [
-              o.jsx("div", {
-                className: "set-name",
-                style: { marginBottom: 0 },
-                children: "启用云端同步",
-              }),
-              o.jsx("button", {
-                className: "switch" + (e ? " on" : ""),
-                onClick: () => n((g) => !g),
-                "aria-pressed": e,
-                children: o.jsx("span", { className: "knob" }),
-              }),
-            ],
-          }),
-          o.jsxs("div", {
-              className: "cloud-form",
-              children: [
-                o.jsx("label", {
-                  className: "field-label",
-                  children: "Supabase URL",
-                }),
-                o.jsx("input", {
-                  className: "field",
-                  placeholder: "https://xxxx.supabase.co",
-                  value: r,
-                  onChange: (g) => s(g.target.value),
-                }),
-                o.jsx("label", {
-                  className: "field-label",
-                  children: "anon key（公开，可放心放前端）",
-                }),
-                o.jsx("input", {
-                  className: "field",
-                  placeholder: "eyJhbGciOi...",
-                  value: i,
-                  onChange: (g) => a(g.target.value),
-                }),
-                o.jsx("label", {
-                  className: "field-label",
-                  children: "共享口令（coupleId）",
-                }),
-                o.jsx("input", {
-                  className: "field",
-                  placeholder: "our-little-days",
-                  value: l,
-                  onChange: (g) => c(g.target.value),
-                }),
-                o.jsx("button", {
-                  className: "primary-btn",
-                  onClick: m,
-                  children: e ? "保存并启用" : "保存云端设置",
-                }),
-                p &&
-                  o.jsx("p", {
-                    className: "cloud-ok",
-                    children: x
-                      ? "配置已保存，进入待办页查看连接和同步状态"
-                      : "已保存（未启用：需填写 URL 与 anon key）",
-                  }),
-              ],
-            }),
-          o.jsxs("details", {
-            className: "sql-help",
-            children: [
-              o.jsx("summary", {
-                children: "📐 还需要在 Supabase 里建表 / 建桶（点开）",
-              }),
-              o.jsxs("p", {
-                className: "set-desc",
-                children: [
-                  "下面是原有演示建表方案，允许匿名读写，共享口令不代替身份验证；只适合非敏感测试。私人数据请先配置登录权限和 RLS，或继续使用本机模式。Storage 需另建 bucket「couple-photos」。TMDB 代理参考 ",
-                  o.jsx("code", {
-                    className: "code-inline",
-                    children: "07freedom/tmdb-proxy",
-                  }),
-                  "。",
-                ],
-              }),
-              o.jsxs("div", {
-                className: "code-box",
-                children: [
-                  $f,
-                  o.jsx("div", {
-                    style: { marginTop: 8 },
-                    children: o.jsx(z2, { text: $f }),
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
+      o.jsx(CloudPanel, {}),
       o.jsxs("div", {
         className: "set-block",
         children: [
@@ -28137,10 +27984,10 @@ function F2() {
           o.jsxs("p", {
             className: "set-desc",
             children: [
-              "「今晚看什么」默认用内置精选片单，每天轮换。填入免费的 ",
+              "「今晚看什么」默认自动获取 Apple TV 在线电影榜，无需填写 Key。若想启用中文热门推荐，可填入免费的 ",
               o.jsx("strong", { children: "TMDB API Key" }),
-              " 后， 会每天自动拉取",
-              o.jsx("strong", { children: "当日热门电影 / 剧集" }),
+              " 后，会自动拉取",
+              o.jsx("strong", { children: "当日热门电影" }),
               "（每天更新一次，并按当天缓存）。 国内访问 TMDB 可能需要科学上网，连不上时会自动回落到内置片单。",
             ],
           }),
@@ -31221,9 +31068,9 @@ function ck() {
   });
 }
 function uk() {
-  const [t, e] = b.useState("home"),
+  const [t, e] = b.useState(()=>sessionStorage.getItem("little-days-view")||"home"),
     [n, r] = b.useState(null);
-  b.useEffect(()=>{window.scrollTo({top:0,behavior:"auto"});},[t]);
+  b.useEffect(()=>{sessionStorage.setItem("little-days-view",t);window.scrollTo({top:0,behavior:"auto"});},[t]);
   return (
     b.useEffect(() => {
       const i = new URLSearchParams(window.location.search).get("add");
@@ -31241,6 +31088,7 @@ function uk() {
     }, []),
     o.jsxs(o.Fragment, {
       children: [
+        o.jsx(RealtimeHub,{onNavigate:e}),
         o.jsx("div", {
           className: "app",
           children: o.jsxs(
@@ -31253,7 +31101,7 @@ function uk() {
                 t === "anniv" && o.jsx(O1, {}),
                 t === "photos" && o.jsx(s2, {}),
                 t === "games" && o.jsx(x2, {}),
-                t === "movies" && o.jsx(U2, {}),
+                t === "movies" && o.jsx(OnlineMovies, {}),
                 t === "settings" && o.jsx(F2, {}),
               ],
             },
@@ -31269,4 +31117,7 @@ function uk() {
 configureFeatures(b,{enabled:ea,config:Hs,pull:Io,upsert:$r,remove:B0,subscribe:z0,categories:sf,todoSeed:i1,Header:u1,celebrate:kr,photos:$1,restorePhotos:async photos=>{const db=await il();await new Promise((resolve,reject)=>{const tx=db.transaction(Lo,'readwrite');for(const photo of photos)tx.objectStore(Lo).put(photo);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}});
   if('serviceWorker' in navigator)navigator.serviceWorker.register(new URL('../sw.js',import.meta.url),{scope:new URL('../',import.meta.url).pathname}).catch(()=>{});
 
-c0(document.getElementById("root")).render(o.jsx(uk, {}));
+configureRealtime(b,{config:Hs,save:n1,enabled:ea,client:Kr,ready:ensureCloud,createClient:e1,room:wr,table:()=>rl,profile});
+configureMovies(b,{config:Hs,fallback:j2,useSharedWatchlist,MovieActions,Watchlist});
+function Application(){const [revision,setRevision]=b.useState(0);b.useEffect(()=>{const change=()=>setRevision(v=>v+1);window.addEventListener('little-days-config',change);const invite=decodeInvite(location.hash);if(invite){sessionStorage.setItem('little-days-view','settings');n1({...Hs(),...invite,enabled:false});}return()=>window.removeEventListener('little-days-config',change);},[]);return o.jsx(SharedData,{children:o.jsx(uk,{})},revision);}
+c0(document.getElementById("root")).render(o.jsx(Application,{}));

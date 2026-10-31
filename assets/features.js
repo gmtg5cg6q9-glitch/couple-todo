@@ -1,5 +1,7 @@
 // Readable additions to the original published application. No build step needed.
+import {reportSync} from './live.js';
 let R, h, api;
+let SharedContext;
 export function configureFeatures(react, services) { R = react; h = react.createElement; api = services; }
 export const KEYS = ['couple-todo-v2','couple-anniv-v1','couple-start','couple-profile-v1','tale.cities','tale.photoMode','couple-watchlist-v1'];
 export function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
@@ -31,6 +33,12 @@ export function mergePending(records, pending) {
   for(const change of pending) change.deleted ? values.delete(change.id) : values.set(change.id,change.value);
   return [...values.values()];
 }
+export function SharedData({children}) {
+  if(!SharedContext)SharedContext=R.createContext(null);
+  const watchlist=useCollection('watchlist','couple-watchlist-v1',[]);
+  return h(SharedContext.Provider,{value:watchlist},children);
+}
+export function useSharedWatchlist(){return R.useContext(SharedContext);}
 export function useCollection(kind,key,seed=[]) {
   const cloud = api.enabled(), config = api.config();
   const scoped = cloud ? `${key}:cloud:${encodeURIComponent(config.url)}:${encodeURIComponent(config.coupleId)}` : key;
@@ -51,12 +59,12 @@ export function useCollection(kind,key,seed=[]) {
       while(pending.current.length) {
         const operation=pending.current[0];
         if(operation.deleted) await api.remove(kind,operation.id); else await api.upsert(kind,operation.value);
-        pending.current=pending.current.filter(item=>item.token!==operation.token);
+        pending.current=readJSON(scoped+':pending',pending.current).filter(item=>item.token!==operation.token);
         saveJSON(scoped+':pending',pending.current);
       }
       const remote=await api.pull(kind);
-      if(active.current) { set(mergePending(remote,pending.current)); setStatus(pending.current.length?'有改动等待同步':'已与云端同步'); }
-    } catch(error) { if(active.current) setStatus('同步未完成，已保留本机改动；联网后自动重试'); }
+      if(active.current) { const changed=JSON.stringify(mergePending(remote,pending.current))!==JSON.stringify(itemsRef.current);set(mergePending(remote,pending.current)); setStatus(pending.current.length?'有改动等待同步':'已与云端同步');reportSync({scope:scoped,pending:pending.current.length,kind,changed}); }
+    } catch(error) { if(active.current) {setStatus('同步未完成，已保留本机改动；联网后自动重试');reportSync({scope:scoped,pending:pending.current.length,phase:'error',error:'同步失败，正在保留改动并重试',kind});} }
     finally { busy.current=false; }
   },[cloud,kind,scoped,set]);
   R.useEffect(()=>{
@@ -69,11 +77,11 @@ export function useCollection(kind,key,seed=[]) {
   },[cloud,kind,scoped,set,flush]);
   const mutate=R.useCallback((id,value)=>{
     if(cloud) {
-      pending.current.push({token:uid(),id,value,deleted:!value});
+      pending.current=readJSON(scoped+':pending',pending.current);pending.current.push({token:uid(),id,value,deleted:!value});
       try { saveJSON(scoped+':pending',pending.current); } catch { announce('无法保存同步队列，请先导出备份。'); return; }
     }
     set(value ? [value,...itemsRef.current.filter(item=>item.id!==id)] : itemsRef.current.filter(item=>item.id!==id));
-    if(cloud) flush();
+    if(cloud) {reportSync({scope:scoped,pending:pending.current.length,phase:'pending',kind});flush();}
   },[cloud,scoped,set,flush]);
   return {items,status,mutate,retry:flush};
 }
@@ -189,15 +197,14 @@ export function ProfileSettings() {
       api.enabled()&&h('div',null,h('p',{className:'set-desc'},'启用云端后使用独立空间。需要将原本机待办和纪念日带过去时，可执行一次复制。'),h(Button,{disabled:busy,onClick:migrate},'复制本机记录到当前云端'))),h('p',{role:'status',className:'ld-notice'},message));
 }
 export function MovieActions({movie}) {
-  const [list,setList]=R.useState(()=>readJSON('couple-watchlist-v1',[]));
+  const {items:list,mutate}=useSharedWatchlist();
   const id=movie.id?String(movie.id):`${movie.title}-${movie.year}`,current=list.find(item=>item.id===id);
-  const put=status=>{const next=[{id,title:movie.title,year:movie.year,status},...list.filter(item=>item.id!==id)];try{saveJSON('couple-watchlist-v1',next);setList(next);window.dispatchEvent(new Event('little-days-watchlist')); }catch{announce('片单保存失败，请检查设备空间。');}};
+  const put=status=>mutate(id,{id,title:movie.title,year:movie.year,genre:movie.genre||'',status,poster:movie.poster||''});
   return h('div',{className:'ld-actions'},h(Button,{'aria-pressed':current?.status==='want',onClick:()=>put('want')},current?.status==='want'?'已加入想看':'加入想看'),h(Button,{'aria-pressed':current?.status==='watched',onClick:()=>put('watched')},current?.status==='watched'?'已看过 ✓':'标记看过'));
 }
 export function Watchlist() {
-  const [items,setItems]=R.useState(()=>readJSON('couple-watchlist-v1',[])),[filter,setFilter]=R.useState('want');
-  R.useEffect(()=>{const refresh=()=>setItems(readJSON('couple-watchlist-v1',[]));window.addEventListener('little-days-watchlist',refresh);return()=>window.removeEventListener('little-days-watchlist',refresh);},[]);
-  const update=(item,status)=>{const next=status?items.map(v=>v.id===item.id?{...v,status}:v):items.filter(v=>v.id!==item.id);try{saveJSON('couple-watchlist-v1',next);setItems(next);}catch{announce('片单保存失败');}};
+  const {items,mutate}=useSharedWatchlist(),[filter,setFilter]=R.useState('want');
+  const update=(item,status)=>mutate(item.id,status?{...item,status}:null);
   return h('details',{className:'set-block ld-watchlist'},h('summary',null,`我们的片单 · ${items.length} 部`),h('div',{className:'ld-actions'},h(Button,{'aria-pressed':filter==='want',onClick:()=>setFilter('want')},'想看'),h(Button,{'aria-pressed':filter==='watched',onClick:()=>setFilter('watched')},'看过')),h('ul',{className:'ld-watch-items'},items.filter(item=>item.status===filter).map(item=>h('li',{key:item.id},h('span',null,item.title,' · ',item.year),h(Button,{onClick:()=>update(item,filter==='want'?'watched':'want')},filter==='want'?'标记看过':'移回想看'),h(Button,{onClick:()=>update(item,null)},'移出片单')))),!items.some(item=>item.status===filter)&&h('p',{className:'view-sub'},'还没有影片，打开影片简介添加吧'));
 }
 export function StatusNotice() {
