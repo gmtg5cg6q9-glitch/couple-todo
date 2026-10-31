@@ -1,5 +1,5 @@
 import {configureRealtime,RealtimeHub,CloudPanel,subscribeSpace,deviceId,decodeInvite} from "./live.js";
-import {configureMovies,OnlineMovies} from "./online-movies.js";
+import {configureMovies,OnlineMovies} from "./chinese-movies.js";
 import {configureFeatures,TodoPage,ProfileSettings,MovieActions,Watchlist,StatusNotice,useCollection,SharedData,useSharedWatchlist,profile,dayNumber,nextAnnual,announce} from "./features.js";
 (function () {
   const e = document.createElement("link").relList;
@@ -27968,64 +27968,13 @@ function F2() {
           o.jsx("h2", { className: "view-title", children: "设置" }),
           o.jsx("p", {
             className: "view-sub",
-            children: "我们的小日子 · v0.5",
+            children: "我们的小日子 · v0.6",
           }),
         ],
       }),
       o.jsx(ProfileSettings, {}),
       o.jsx(CloudPanel, {}),
-      o.jsxs("div", {
-        className: "set-block",
-        children: [
-          o.jsx("div", {
-            className: "set-name",
-            children: "🎬 影视每日推荐（在线更新）",
-          }),
-          o.jsxs("p", {
-            className: "set-desc",
-            children: [
-              "「今晚看什么」默认自动获取 Apple TV 在线电影榜，无需填写 Key。若想启用中文热门推荐，可填入免费的 ",
-              o.jsx("strong", { children: "TMDB API Key" }),
-              " 后，会自动拉取",
-              o.jsx("strong", { children: "当日热门电影" }),
-              "（每天更新一次，并按当天缓存）。 国内访问 TMDB 可能需要科学上网，连不上时会自动回落到内置片单。",
-            ],
-          }),
-          o.jsx("label", {
-            className: "field-label",
-            children: "TMDB API Key（v3，免费）",
-          }),
-          o.jsx("input", {
-            className: "field",
-            placeholder: "themoviedb.org → 设置 → API 里免费申请",
-            value: f,
-            onChange: (g) => h(g.target.value),
-          }),
-          o.jsx("label", {
-            className: "field-label",
-            children: "TMDB 代理地址（可选；有自建代理才填）",
-          }),
-          o.jsx("input", {
-            className: "field",
-            placeholder: "https://xxxx.supabase.co/functions/v1/tmdb",
-            value: u,
-            onChange: (g) => d(g.target.value),
-          }),
-          o.jsx("button", {
-            className: "primary-btn",
-            onClick: m,
-            children: "保存",
-          }),
-          p &&
-            o.jsx("p", {
-              className: "cloud-ok",
-              children:
-                f.trim() || u.trim()
-                  ? "配置已保存；连接成功后会显示在线推荐，失败时使用内置片单"
-                  : "已保存（未填 Key，继续用内置片单每日轮换）",
-            }),
-        ],
-      }),
+      o.jsxs("div",{className:"set-block",children:[o.jsx("div",{className:"set-name",children:"🎬 电影推荐片源"}),o.jsx("p",{className:"set-desc",children:"默认使用猫眼国内院线热映，包含国产片和国内上映的进口片，提供中文片名、简介、评分和演员信息。无需填写电影 API Key；网络不畅时保留中文缓存，也可切换到原来的情侣精选。电影星球、拖动惯性、自动旋转和简介弹层特效已恢复。"})]}),
       o.jsxs("div", {
         className: "set-block",
         children: [
@@ -31118,6 +31067,6 @@ configureFeatures(b,{enabled:ea,config:Hs,pull:Io,upsert:$r,remove:B0,subscribe:
   if('serviceWorker' in navigator)navigator.serviceWorker.register(new URL('../sw.js',import.meta.url),{scope:new URL('../',import.meta.url).pathname}).catch(()=>{});
 
 configureRealtime(b,{config:Hs,save:n1,enabled:ea,client:Kr,ready:ensureCloud,createClient:e1,room:wr,table:()=>rl,profile});
-configureMovies(b,{config:Hs,fallback:j2,useSharedWatchlist,MovieActions,Watchlist});
+configureMovies(b,{config:Hs,fallback:j2,useSharedWatchlist,MovieActions,Watchlist,Globe:E2,canWebGL:D2,useCompact:M2,tile:$2});
 function Application(){const [revision,setRevision]=b.useState(0);b.useEffect(()=>{const change=()=>setRevision(v=>v+1);window.addEventListener('little-days-config',change);const invite=decodeInvite(location.hash);if(invite){sessionStorage.setItem('little-days-view','settings');n1({...Hs(),...invite,enabled:false});}return()=>window.removeEventListener('little-days-config',change);},[]);return o.jsx(SharedData,{children:o.jsx(uk,{})},revision);}
 c0(document.getElementById("root")).render(o.jsx(Application,{}));

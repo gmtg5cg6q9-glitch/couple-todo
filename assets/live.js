@@ -1,6 +1,6 @@
 // One shared Realtime connection drives all mounted views and the status panel.
 let R,h,api;
-export const APP_VERSION='0.5.0';
+export const APP_VERSION='0.6.0';
 const subscribers=new Set(),collections=new Map();
 let snapshot={connection:'local',lastSync:null,pending:{},history:[],online:typeof navigator==='undefined'?true:navigator.onLine,presence:0,error:'',newVersion:null};
 export function configureRealtime(react,services){R=react;h=react.createElement;api=services;}
