@@ -1,0 +1,7 @@
+{
+  "name": "our-little-days",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node tests/regression.mjs && node tests/sync.mjs"}
+}

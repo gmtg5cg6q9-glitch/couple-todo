@@ -1,35 +1,5 @@
-/* 自毁型 Service Worker
- * 旧版站点注册过 SW，会缓存旧页面导致返回访客看不到新版。
- * 本文件替换旧 sw.js：安装后立即接管、删除所有缓存、注销自身。
- */
-self.addEventListener('install', () => {
-  self.skipWaiting()
-})
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    (async () => {
-      try {
-        const keys = await caches.keys()
-        await Promise.all(keys.map((k) => caches.delete(k)))
-      } catch (e) {
-        /* ignore */
-      }
-      try {
-        await self.registration.unregister()
-      } catch (e) {
-        /* ignore */
-      }
-      try {
-        const clientsList = await self.clients.matchAll({ type: 'window' })
-        clientsList.forEach((c) => c.navigate(c.url))
-      } catch (e) {
-        /* ignore */
-      }
-    })()
-  )
-})
-
-self.addEventListener('fetch', () => {
-  /* 不拦截任何请求，全部走网络 */
-})
+const BASE=new URL('./',self.location.href), CACHE='little-days-v04-20261031:'+BASE.pathname;
+const SHELL=['./','./index.html','./icon.svg','./manifest.webmanifest','./assets/app.js','./assets/features.js','./assets/features.css','./assets/index-BdMrAUs7.css','./cities/guiyang.jpg','./cities/shuifu.jpg','./cities/yangshuo.jpg','./cities/sanya.jpg','./cities/haikou.jpg','./cities/chengdu.jpg'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(p=>new URL(p,BASE).href))).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('little-days-')&&k.endsWith(':'+BASE.pathname)&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==BASE.origin||!u.pathname.startsWith(BASE.pathname))return;const shell=SHELL.some(p=>new URL(p,BASE).pathname===u.pathname);if(!shell&&e.request.mode!=='navigate')return;e.respondWith((async()=>{const c=await caches.open(CACHE);try{const r=await fetch(e.request);if(r.ok&&shell)await c.put(new Request(u.origin+u.pathname),r.clone());return r;}catch{return await c.match(u.origin+u.pathname)||(e.request.mode==='navigate'?await c.match(new URL('./index.html',BASE).href):null)||new Response('当前离线，请联网后重试',{status:503});}})());});
