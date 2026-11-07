@@ -1,4 +1,4 @@
-const BASE=new URL('./',self.location.href), CACHE='little-days-v073-20261107:'+BASE.pathname;
+const BASE=new URL('./',self.location.href), CACHE='little-days-v074-20261107:'+BASE.pathname;
 const SHELL=['./','./index.html','./icon.svg','./manifest.webmanifest','./assets/app.js','./assets/features.js','./assets/live.js','./assets/chinese-movies.js','./assets/timetable.js','./assets/timetable-import.js','./movie-catalog.json','./app-config.json','./assets/features.css','./assets/index-BdMrAUs7.css','./cities/guiyang.jpg','./cities/shuifu.jpg','./cities/yangshuo.jpg','./cities/sanya.jpg','./cities/haikou.jpg','./cities/chengdu.jpg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(p=>new URL(p,BASE).href))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('little-days-')&&k.endsWith(':'+BASE.pathname)&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
