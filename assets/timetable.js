@@ -303,9 +303,10 @@ export function TimetablePage({ collection }) {
   const current = listed.filter(course => parseWeeks(course.weekText, course.parity).includes(weeks[course.person]));
   const activeDay = dayIndex(date);
   const lastPeriod = Math.max(10, ...listed.map(course => course.last));
-  const slotGroups = Array.from({ length: Math.ceil(lastPeriod / 2) }, (_, index) => {
-    const first = index * 2 + 1;
-    const last = Math.min(first + 1, lastPeriod);
+  const slotsPerRow = person === 'girl' ? 1 : 2;
+  const slotGroups = Array.from({ length: Math.ceil(lastPeriod / slotsPerRow) }, (_, index) => {
+    const first = index * slotsPerRow + 1;
+    const last = Math.min(first + slotsPerRow - 1, lastPeriod);
     const times = [];
     for (let slot = first; slot <= last; slot++) {
       for (const boundary of ['start', 'end']) {
@@ -462,7 +463,7 @@ export function TimetablePage({ collection }) {
       slotGroups.map(({ first, last, times }) => h(R.Fragment, { key: first },
         h('div', { className: 'tt-row-line', 'aria-hidden': true, style: { gridRow: (first + 1) + ' / ' + (last + 2) } }),
         h('div', { className: 'tt-period', style: { gridRow: (first + 1) + ' / ' + (last + 2) } },
-          h('strong', null, first === last ? first : first + '–' + last),
+          h('strong', null, first === last ? '第' + first + '节' : first + '–' + last),
           times.map(time => h('small', { key: time }, time))))),
       days.flatMap(day => groupsOn(day.day).map(group => courseButton(group, day.day)))),
     h('details', { className: 'tt-manager' },

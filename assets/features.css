@@ -5,13 +5,13 @@
 .ld-source-compact{padding:12px 15px}.ld-movie-controls{display:flex;gap:16px;align-items:center;justify-content:space-between;margin:18px 0 10px}.ld-movie-channel{flex:1;margin:0;max-width:390px}.ld-movie-controls .photo-modes{flex-shrink:0}.ld-chinese-movies .ld-movie-filters{margin:12px 0}.ld-chinese-movies .cats{flex-wrap:wrap;gap:8px}.ld-chinese-movies .ld-restored-globe{margin:8px 0 0}.ld-globe-hint{text-align:center;font-size:11px;color:#7c8e91;margin:5px 0 15px}.ld-active-film .ld-actions{justify-content:center;margin:12px 0 0}.ld-sheet-close{position:absolute;right:18px;top:18px;z-index:2}.ld-film-credit{font-size:12px;color:#6f7f83;line-height:1.7;text-align:center;margin:5px 0}.ld-chinese-movies .movie-sheet-inner{position:relative}.ld-chinese-movies .movie-sheet-inner>.ld-actions{justify-content:center}.ld-chinese-movies .movie-sheet-inner>p:last-child{text-align:center;font-size:12px}.ld-chinese-movies .movie-sheet-inner>p:last-child a{color:#3d748b;text-decoration:none}@media(max-width:500px){.ld-movie-controls{gap:9px;flex-wrap:wrap}.ld-movie-channel{flex-basis:190px}.ld-chinese-movies .ld-source-box{gap:8px}.ld-chinese-movies .ld-source-box strong{font-size:13px}.ld-chinese-movies .ld-source-box p{font-size:10px}.ld-active-film .movie-detail-head{gap:8px}.ld-chinese-movies .movie-sheet-inner{padding-top:50px}.ld-sheet-close{right:12px;top:12px}}
 
 /* Week timetable */
+.app:has(.tt-page) { width: 100%; max-width: none; box-sizing: border-box; }
 .tt-page {
   --tt-ink: #20251b;
   --tt-muted: #51594a;
   --tt-line: #e4e7d8;
   --tt-paper: #f8f9ed;
   --tt-slot-height: 50px;
-  --tt-axis-width: 58px;
   color: var(--tt-ink);
   background: var(--tt-paper);
   border: 1px solid var(--tt-line);
@@ -80,9 +80,8 @@
 .tt-intro p { margin: 3px 0 0; color: var(--tt-muted); line-height: 1.55; }
 .tt-week-grid {
   display: grid;
-  grid-template-columns: var(--tt-axis-width) repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: 49px repeat(var(--tt-periods), var(--tt-slot-height));
-  column-gap: 3px;
   align-items: stretch;
   isolation: isolate;
 }
@@ -111,7 +110,7 @@
   overflow-wrap: anywhere;
   text-align: left;
   align-self: stretch;
-  margin: 2px 0;
+  margin: 2px 2px;
   padding: 5px 4px;
   border: 0;
   border-radius: 8px;
@@ -133,14 +132,20 @@
 .tt-color-4 { --tt-course-color: #a45621; }
 .tt-form-actions { flex-wrap: wrap; }
 .tt-form-actions .primary-btn { width: auto; margin: 0; }
-@media (max-width: 600px) {
-  .app:has(.tt-page) { padding-left: 4px; padding-right: 4px; padding-top: 13px; }
-  .tt-page { --tt-axis-width: 37px; --tt-slot-height: 49px; padding: 12px 4px 10px; border-radius: 12px; }
-  .tt-week-grid { column-gap: 2px; }
+@media (max-width: 760px) {
+  .app:has(.tt-page) {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-top: 13px;
+  }
+  .tt-page { --tt-slot-height: 49px; padding: 12px 0 10px; border: 0; border-radius: 0; }
+  .tt-weekbar { padding-inline: 12px; }
+  .tt-tools, .tt-intro { margin-inline: 12px; }
+  .tt-page > .tt-manager, .tt-page > .tt-status, .tt-page > .ld-notice { margin-inline: 12px; }
   .tt-column-head { font-size: 12px; }
   .tt-column-head small, .tt-period small { font-size: 9px; }
   .tt-nav, .tt-menu summary { width: 28px; }
-  .tt-course { padding: 4px 3px; border-radius: 6px; font-size: 10px; gap: 2px; }
+  .tt-course { margin-inline: 1.5px; padding: 4px 3px; border-radius: 6px; font-size: 10px; gap: 2px; }
   .tt-course strong { font-size: 11px; }
   .tt-course small { font-size: 9px; }
 }
