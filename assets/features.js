@@ -76,15 +76,29 @@ export function useCollection(kind,key,seed=[]) {
     if(cloud) { flush(); unsubscribe=api.subscribe(kind,flush); timer=setInterval(flush,15000); window.addEventListener('online',flush); }
     return ()=>{ active.current=false; unsubscribe(); clearInterval(timer); window.removeEventListener('online',flush); window.removeEventListener('storage',onStorage); };
   },[cloud,kind,scoped,set,flush]);
-  const mutate=R.useCallback((id,value)=>{
+  const mutateMany=R.useCallback(changes=>{
+    if(!changes.length)return true;
     if(cloud) {
-      pending.current=readJSON(scoped+':pending',pending.current);pending.current.push({token:uid(),id,value,deleted:!value});
-      try { saveJSON(scoped+':pending',pending.current); } catch { announce('无法保存同步队列，请先导出备份。'); return; }
+      const queue=readJSON(scoped+':pending',pending.current);
+      const next=[...queue,...changes.map(({id,value})=>({token:uid(),id,value,deleted:!value}))];
+      try { saveJSON(scoped+':pending',next); pending.current=next; }
+      catch { announce('无法保存同步队列，请先导出备份。'); return false; }
     }
-    set(value ? [value,...itemsRef.current.filter(item=>item.id!==id)] : itemsRef.current.filter(item=>item.id!==id));
+    const next=changes.reduce((items,{id,value})=>{
+      const remaining=items.filter(item=>item.id!==id);
+      return value?[value,...remaining]:remaining;
+    },itemsRef.current);
+    if(!cloud) {
+      try { saveJSON(scoped,next); }
+      catch { announce('设备存储空间不足，改动尚未保存，请先导出备份。'); return false; }
+      itemsRef.current=next;
+      if(active.current)setItems(next);
+    } else set(next);
     if(cloud) {reportSync({scope:scoped,pending:pending.current.length,phase:'pending',kind});flush();}
+    return true;
   },[cloud,scoped,set,flush]);
-  return {items,status,mutate,retry:flush};
+  const mutate=R.useCallback((id,value)=>mutateMany([{id,value}]),[mutateMany]);
+  return {items,status,mutate,mutateMany,retry:flush};
 }
 function Field({label,...props}) { return h('label',{className:'ld-field'},h('span',null,label),h('input',{className:'field','aria-label':label,...props,onInput:props.onChange})); }
 function Select({label,options,...props}) { return h('label',{className:'ld-field'},h('span',null,label),h('select',{className:'field','aria-label':label,...props},options.map(([value,text])=>h('option',{key:value,value},text)))); }

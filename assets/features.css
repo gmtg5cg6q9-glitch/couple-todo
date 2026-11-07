@@ -165,3 +165,23 @@
   .tt-switch-btn { padding: 7px 10px; }
   .tt-weekbar .tt-jump { margin-left: 0; }
 }
+.tt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tt-actions .mini-btn { min-height: 37px; }
+.tt-import-text {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  box-sizing: border-box;
+  font: inherit;
+  white-space: pre-wrap;
+}
+.tt-import-preview {
+  border: 1px solid #d2ded4;
+  border-radius: 12px;
+  background: #eff4eb;
+  padding: 12px;
+  font-size: 13px;
+}
+.tt-import-preview ul { max-height: 180px; overflow-y: auto; padding-left: 20px; margin: 8px 0; }
+.tt-import-preview li { margin-bottom: 6px; }
+.tt-import-preview li span { display: block; color: #526a72; font-size: 12px; }

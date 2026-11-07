@@ -1,3 +1,5 @@
+import { parseTimetableRows } from './timetable-import.js';
+
 // Each entry describes one weekly meeting, so a course can have several times.
 export const TIMETABLE_KEY = 'couple-timetable-v1';
 export const PEOPLE = {
@@ -65,7 +67,8 @@ export function validateTimetableRecord(record) {
   }
   if (record.type !== 'course' || record.id.startsWith('term-') || !validText(record.title, 80) || !record.title.trim()
     || !validText(record.room, 60) || !validText(record.teacher, 40)) throw Error('请检查课程名称、教室和教师');
-  if (!inRange(record.day, 0, 6) || !inRange(record.first, 1, MAX_PERIODS) || !inRange(record.last, record.first, MAX_PERIODS)) {
+  if (!inRange(record.day, 0, 6)) throw Error('上课星期应为周一至周日');
+  if (!inRange(record.first, 1, MAX_PERIODS) || !inRange(record.last, record.first, MAX_PERIODS)) {
     throw Error('结束节次须等于或晚于开始节次');
   }
   if (record.start !== '' || record.end !== '') {
@@ -151,6 +154,130 @@ function Editor({ title, close, submit, children }) {
     children));
 }
 
+function meetingKey(course) {
+  return JSON.stringify([
+    course.person, course.title.normalize('NFKC').toLowerCase(), course.day, course.first, course.last,
+    parseWeeks(course.weekText, course.parity),
+  ]);
+}
+
+function planImport(text, person, term, existing) {
+  if (!term) throw Error('请先保存这位同学的学期设置');
+  const seen = new Set(existing.map(meetingKey));
+  const rows = parseTimetableRows(text, person);
+  const additions = [];
+  const errors = [];
+  let duplicates = 0;
+  for (const row of rows) {
+    try {
+      if (row.error) throw Error(row.error);
+      const course = { ...row.course, id: 'import-preview-' + row.row };
+      validateTimetableRecord(course);
+      parseWeeks(course.weekText, course.parity, term.length);
+      const key = meetingKey(course);
+      if (seen.has(key)) { duplicates++; continue; }
+      const collisions = findConflicts(course, [...existing, ...additions.map(item => item.course)]);
+      additions.push({ course, key, collision: collisions.length > 0 });
+      seen.add(key);
+    } catch (error) {
+      errors.push('第 ' + row.row + ' 行：' + error.message);
+    }
+  }
+  return { additions, errors, duplicates, firstMonday: term.firstMonday };
+}
+
+async function importId(firstMonday, key) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(firstMonday + '\n' + key));
+  return 'import-' + Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function ImportEditor({ initialPerson, terms, courses, close, save }) {
+  const [person, setPerson] = R.useState(initialPerson);
+  const [text, setText] = R.useState('');
+  const [preview, setPreview] = R.useState(null);
+  const [error, setError] = R.useState('');
+  const [busy, setBusy] = R.useState(false);
+  const readVersion = R.useRef(0);
+  const term = terms[person];
+  const updateSource = value => {
+    readVersion.current++;
+    setText(value);
+    setPreview(null);
+    setError('');
+  };
+  async function loadFile(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setPreview(null);
+    setError('');
+    const version = ++readVersion.current;
+    try {
+      if (file.size > 600000) throw Error('请选择不超过 600 KB 的个人课表文件');
+      const buffer = await file.arrayBuffer();
+      let content;
+      try { content = new TextDecoder('utf-8', { fatal: true }).decode(buffer); }
+      catch { content = new TextDecoder('gb18030', { fatal: true }).decode(buffer); }
+      if (version === readVersion.current) updateSource(content);
+    } catch (problem) {
+      if (version === readVersion.current) setError(problem.message || '文件读取失败');
+    }
+  }
+  function inspect() {
+    setError('');
+    try { setPreview(planImport(text, person, term, courses)); }
+    catch (problem) { setPreview(null); setError(problem.message); }
+  }
+  async function commit() {
+    if (!preview?.additions.length || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const latest = planImport(text, person, term, courses);
+      if (JSON.stringify(latest) !== JSON.stringify(preview)) {
+        setPreview(latest);
+        setError('课表已更新，请重新核对预览。');
+        return;
+      }
+      const changes = await Promise.all(latest.additions.map(async ({ course, key }) => {
+        const id = await importId(term.firstMonday, key);
+        return { id, value: { ...course, id } };
+      }));
+      if (!save(changes)) setError('保存失败。请检查浏览器存储后重试。');
+    } catch (problem) { setError(problem.message); }
+    finally { setBusy(false); }
+  }
+  return h(Editor, { title: '批量导入课表', close: busy ? () => {} : close, submit: preview ? commit : inspect },
+    h('p', { className: 'tt-form-help' }, '在学校系统打开个人课表，复制带表头的课程明细，或下载 CSV 后选择文件。导入前先核对识别结果。'),
+    h(Field, { label: '导入到', value: person, disabled: busy,
+      change: value => { setPerson(value); setPreview(null); setError(''); },
+      options: Object.entries(PEOPLE).map(([key, member]) => [key, member.label + ' · ' + member.school]) }),
+    !term && h('p', { className: 'ld-notice' }, '请先在课表页面为这位同学设置第一教学周。'),
+    h('label', { className: 'ld-field' }, '选择 CSV / TSV 文件',
+      h('input', { type: 'file', accept: '.csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain', disabled: busy, onChange: loadFile })),
+    h('label', { className: 'ld-field' }, '课程明细',
+      h('textarea', {
+        className: 'field tt-import-text', value: text, disabled: busy,
+        placeholder: '课程名称\t星期\t节次\t周次\t教室\t教师\n示例课程\t周一\t1-2\t1-16单周\t教学楼101\t任课老师',
+        onChange: event => updateSource(event.target.value), onInput: event => updateSource(event.target.value),
+      })),
+    h('p', { className: 'tt-form-help' }, '至少需要课程名称、星期、节次和周次。可附教室、教师、单双周及起止时间。Excel 表格可复制课程明细区域后粘贴。'),
+    error && h('p', { className: 'tt-form-error', role: 'alert' }, error),
+    preview && h('div', { className: 'tt-import-preview', 'aria-label': '导入预览' },
+      h('strong', null, '可导入 ' + preview.additions.length + ' 条 · 重复 ' + preview.duplicates + ' 条 · 待核对 ' + preview.errors.length + ' 条'),
+      h('ul', null, preview.additions.map(({ course, collision }) => h('li', { key: course.id },
+        h('strong', null, course.title),
+        h('span', null, [DAYS[course.day], courseTime(course), '第 ' + course.weekText + ' 周', PARITY[course.parity],
+          course.room, collision ? '时间重叠' : ''].filter(Boolean).join(' · '))))),
+      preview.errors.length > 0 && h('ul', { className: 'tt-form-error' },
+        preview.errors.map(problem => h('li', { key: problem }, problem)))),
+    h('div', { className: 'tt-form-actions' },
+      h(Button, { onClick: close, disabled: busy }, '取消'),
+      h('button', { className: 'primary-btn', type: 'submit',
+        disabled: busy || !term || !text.trim() || (preview && !preview.additions.length) },
+      busy ? '正在保存…' : preview ? '确认导入 ' + preview.additions.length + ' 条' : '预览导入')));
+}
+
 export function TimetablePage({ collection }) {
   const [person, setPerson] = R.useState('both');
   const [date, setDate] = R.useState(todayInChina);
@@ -159,7 +286,8 @@ export function TimetablePage({ collection }) {
   const [conflict, setConflict] = R.useState('');
   const [removed, setRemoved] = R.useState(null);
   const [message, setMessage] = R.useState('');
-  const { items, status, mutate, retry } = collection;
+  const [importing, setImporting] = R.useState(false);
+  const { items, status, mutate, mutateMany, retry } = collection;
   const records = items.filter(usable);
   const people = person === 'both' ? Object.keys(PEOPLE) : [person];
   const terms = Object.fromEntries(Object.keys(PEOPLE).map(key =>
@@ -211,7 +339,7 @@ export function TimetablePage({ collection }) {
           return;
         }
       }
-      mutate(value.id, value);
+      if (!mutate(value.id, value)) return;
       setMessage(value.type === 'term' ? '学期已保存，可以添加课程了。' : '课程已保存');
       setEdit(null);
       if (value.type === 'term' && !teachingWeek(monday, value)) setDate(value.firstMonday);
@@ -220,7 +348,7 @@ export function TimetablePage({ collection }) {
     }
   }
   function remove() {
-    mutate(edit.id, null);
+    if (!mutate(edit.id, null)) return;
     setRemoved(edit);
     setMessage('');
     setEdit(null);
@@ -263,7 +391,9 @@ export function TimetablePage({ collection }) {
       h('div', { className: 'tt-switch', role: 'group', 'aria-label': '课表成员' },
         [['both', '双人'], ...Object.entries(PEOPLE).map(([key, member]) => [key, member.label])].map(([key, label]) =>
           h(Button, { key, className: 'tt-switch-btn', 'aria-pressed': person === key, onClick: () => setPerson(key) }, label))),
-      h(Button, { className: 'primary-btn tt-add', onClick: () => add() }, '＋ 添加课程')),
+      h('div', { className: 'tt-actions' },
+        h(Button, { onClick: () => setImporting(true) }, '导入课表'),
+        h(Button, { className: 'primary-btn tt-add', onClick: () => add() }, '＋ 添加课程'))),
     h('div', { className: 'tt-weekbar', 'aria-label': '课表日期' },
       h(Button, { onClick: () => setDate(shiftDays(date, -7)), 'aria-label': '上一周' }, '‹'),
       h('div', { className: 'tt-week-range' },
@@ -299,9 +429,19 @@ export function TimetablePage({ collection }) {
         h(Button, { onClick: () => open(course), 'aria-label': '管理课程 ' + course.title }, '编辑'))))
         : h('p', null, '添加后可以在这里编辑任意周次的课程。')),
     removed && h('div', { className: 'ld-notice', role: 'status' }, '已删除「' + removed.title + '」',
-      h(Button, { onClick: () => { mutate(removed.id, removed); setRemoved(null); setMessage('课程已恢复'); } }, '撤销删除')),
+      h(Button, { onClick: () => { if (mutate(removed.id, removed)) { setRemoved(null); setMessage('课程已恢复'); } } }, '撤销删除')),
     h('p', { className: 'tt-status', role: 'status' }, message ? message + ' · ' + status : status,
       api.enabled() && h(Button, { onClick: retry }, '重新同步')),
+    importing && h(ImportEditor, {
+      initialPerson: person === 'both' ? people.find(key => terms[key]) || 'girl' : person,
+      terms, courses, close: () => setImporting(false),
+      save: changes => {
+        if (!mutateMany(changes)) return false;
+        setImporting(false);
+        setMessage(changes.length ? '已导入 ' + changes.length + ' 条课程' : '这些课程已在课表中');
+        return true;
+      },
+    }),
     edit && h(Editor, { title: termEditor ? PEOPLE[edit.person].school + ' · 学期设置' : edit.id ? '编辑课程' : '添加课程',
       close: () => setEdit(null), submit: save },
     termEditor ? h(R.Fragment, null,
