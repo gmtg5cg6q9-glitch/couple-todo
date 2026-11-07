@@ -1,5 +1,6 @@
 import {configureRealtime,RealtimeHub,CloudPanel,subscribeSpace,deviceId,decodeInvite} from "./live.js";
 import {configureMovies,OnlineMovies} from "./chinese-movies.js";
+import {configureTimetable,TimetableData,TimetablePage} from "./timetable.js";
 import {configureFeatures,TodoPage,ProfileSettings,MovieActions,Watchlist,StatusNotice,useCollection,SharedData,useSharedWatchlist,profile,dayNumber,nextAnnual,announce} from "./features.js";
 (function () {
   const e = document.createElement("link").relList;
@@ -10197,6 +10198,7 @@ function By({
 const zy = [
   { id: "home", label: "首页", icon: "🏠" },
   { id: "todo", label: "待办", icon: "📝" },
+  { id: "timetable", label: "课表", icon: "📚" },
   { id: "anniv", label: "纪念日", icon: "🎈" },
   { id: "photos", label: "照片", icon: "📸" },
   { id: "games", label: "游戏", icon: "🎮" },
@@ -10234,11 +10236,11 @@ function Hy({ view: t, onChange: e }) {
       items: r,
       position: n ? "bottom" : "left",
       theme: "light",
-      baseItemSize: n ? 44 : 46,
-      magnification: n ? 56 : 66,
+      baseItemSize: n ? 33 : 46,
+      magnification: n ? 43 : 66,
       distance: n ? 140 : 190,
       panelHeight: n ? 58 : 62,
-      gap: n ? 6 : 7,
+      gap: n ? 4 : 7,
       roundness: 0.45,
       accentColor: "#1c4568",
       bounce: !0,
@@ -27968,7 +27970,7 @@ function F2() {
           o.jsx("h2", { className: "view-title", children: "设置" }),
           o.jsx("p", {
             className: "view-sub",
-            children: "我们的小日子 · v0.6",
+            children: "我们的小日子 · v0.7",
           }),
         ],
       }),
@@ -31016,7 +31018,7 @@ function ck() {
     ],
   });
 }
-function uk() {
+function uk({ timetable }) {
   const [t, e] = b.useState(()=>sessionStorage.getItem("little-days-view")||"home"),
     [n, r] = b.useState(null);
   b.useEffect(()=>{sessionStorage.setItem("little-days-view",t);window.scrollTo({top:0,behavior:"auto"});},[t]);
@@ -31047,6 +31049,7 @@ function uk() {
               children: [
                 t === "home" && o.jsx(ck, { onChange: e }),
                 t === "todo" && o.jsx(v1, { pendingAdd: n }),
+                t === "timetable" && o.jsx(TimetablePage, { collection: timetable }),
                 t === "anniv" && o.jsx(O1, {}),
                 t === "photos" && o.jsx(s2, {}),
                 t === "games" && o.jsx(x2, {}),
@@ -31068,5 +31071,6 @@ configureFeatures(b,{enabled:ea,config:Hs,pull:Io,upsert:$r,remove:B0,subscribe:
 
 configureRealtime(b,{config:Hs,save:n1,enabled:ea,client:Kr,ready:ensureCloud,createClient:e1,room:wr,table:()=>rl,profile});
 configureMovies(b,{config:Hs,fallback:j2,useSharedWatchlist,MovieActions,Watchlist,Globe:E2,canWebGL:D2,useCompact:M2,tile:$2});
-function Application(){const [revision,setRevision]=b.useState(0);b.useEffect(()=>{const change=()=>setRevision(v=>v+1);window.addEventListener('little-days-config',change);const invite=decodeInvite(location.hash);if(invite){sessionStorage.setItem('little-days-view','settings');n1({...Hs(),...invite,enabled:false});}return()=>window.removeEventListener('little-days-config',change);},[]);return o.jsx(SharedData,{children:o.jsx(uk,{})},revision);}
+configureTimetable(b,{useCollection,enabled:ea});
+function Application(){const [revision,setRevision]=b.useState(0);b.useEffect(()=>{const change=()=>setRevision(v=>v+1);window.addEventListener('little-days-config',change);const invite=decodeInvite(location.hash);if(invite){sessionStorage.setItem('little-days-view','settings');n1({...Hs(),...invite,enabled:false});}return()=>window.removeEventListener('little-days-config',change);},[]);return o.jsx(SharedData,{children:o.jsx(TimetableData,{children:timetable=>o.jsx(uk,{timetable})})},revision);}
 c0(document.getElementById("root")).render(o.jsx(Application,{}));

@@ -1,6 +1,6 @@
 // One shared Realtime connection drives all mounted views and the status panel.
 let R,h,api;
-export const APP_VERSION='0.6.0';
+export const APP_VERSION='0.7.0';
 const subscribers=new Set(),collections=new Map();
 let snapshot={connection:'local',lastSync:null,pending:{},history:[],online:typeof navigator==='undefined'?true:navigator.onLine,presence:0,error:'',newVersion:null};
 export function configureRealtime(react,services){R=react;h=react.createElement;api=services;}
@@ -12,7 +12,7 @@ export function reportSync({scope='default',pending=0,phase='saved',error='',kin
   if(changed)next.history=[{id:Date.now()+Math.random(),time:Date.now(),text:kindLabel(kind)+'已更新'} ,...snapshot.history].slice(0,12);
   emit(next);
 }
-const kindLabel=kind=>({todos:'待办',anniv:'纪念日',watchlist:'共同片单',photos:'相册',profile:'资料',cities:'旅行城市'})[kind]||'共享资料';
+const kindLabel=kind=>({todos:'待办',anniv:'纪念日',timetable:'课表',watchlist:'共同片单',photos:'相册',profile:'资料',cities:'旅行城市'})[kind]||'共享资料';
 export function subscribeSpace(kind,callback){if(!collections.has(kind))collections.set(kind,new Set());collections.get(kind).add(callback);return()=>collections.get(kind)?.delete(callback);}
 function notify(kind){for(const [name,listeners]of collections)if(!kind||name===kind)for(const listener of listeners)listener();window.dispatchEvent(new CustomEvent('little-days-remote',{detail:{kind}}));}
 export function deviceId(){let id=localStorage.getItem('couple-device-v1');if(!id){id=crypto.randomUUID();localStorage.setItem('couple-device-v1',id);}return id;}
@@ -83,7 +83,7 @@ export function RealtimeHub({onNavigate}){
   async function update(){setUpdating(true);try{if('serviceWorker'in navigator){for(const registration of await navigator.serviceWorker.getRegistrations())if(registration.scope.startsWith(new URL('../',import.meta.url).href))await registration.update();}location.reload();}catch{setUpdating(false);}}
   return h(R.Fragment,null,h('div',{className:'ld-sync-bar'},h('button',{className:'ld-sync-summary',onClick:()=>setOpen(value=>!value),'aria-expanded':open},h('span',{className:'ld-live-dot '+(status.connection==='live'?'live':'')},'●'),h('span',null,label),api.enabled()&&h('small',null,time),status.connection==='live'&&h('small',null,status.presence>1?'TA 也在线':'等待另一端上线')),h('button',{className:'mini-btn',onClick:()=>onNavigate('settings')},'配对 / 设置')),
     status.newVersion&&h('div',{className:'ld-update-notice',role:'status'},'有新版本 '+status.newVersion+'，更新后保留本机资料。',h('button',{className:'mini-btn',disabled:updating,onClick:update},updating?'更新中…':'更新界面')),
-    open&&h('section',{className:'ld-sync-panel','aria-label':'实时同步动态'},h('h3',null,'同步动态'),h('p',null,api.enabled()?'待办、纪念日、共同片单会自动刷新，无需重新打开页面。':'在设置中创建空间，将空间码发给另一半。'),h('p',{role:'status'},status.error|| (api.enabled()?time:'本机资料只保存在当前浏览器')),h('ul',null,status.history.map(item=>h('li',{key:item.id},h('time',null,new Date(item.time).toLocaleTimeString('zh-CN')),' ',item.text))),h('button',{className:'mini-btn',onClick:()=>{notify();}},'立即同步')));
+    open&&h('section',{className:'ld-sync-panel','aria-label':'实时同步动态'},h('h3',null,'同步动态'),h('p',null,api.enabled()?'待办、纪念日、课表和共同片单会自动刷新，无需重新打开页面。':'在设置中创建空间，将空间码发给另一半。'),h('p',{role:'status'},status.error|| (api.enabled()?time:'本机资料只保存在当前浏览器')),h('ul',null,status.history.map(item=>h('li',{key:item.id},h('time',null,new Date(item.time).toLocaleTimeString('zh-CN')),' ',item.text))),h('button',{className:'mini-btn',onClick:()=>{notify();}},'立即同步')));
 }
 export function CloudPanel(){
   const initial=decodeInvite(location.hash)||api.config()||{};
@@ -106,7 +106,7 @@ export function CloudPanel(){
   }
   async function invite(){try{const data=validateConnection({url:url.trim(),anon:key.trim(),coupleId:room.trim()});const link=new URL('../',import.meta.url);link.hash='pair='+encodeInvite(data);setInviteLink(link.href);try{await navigator.clipboard.writeText(link.href);setMessage('邀请链接已复制，发给另一半后，TA 打开设置并确认连接即可。');}catch{setMessage('请手动复制下方邀请链接，发给另一半。');}}catch(error){setMessage(error.message||'请先生成空间码');}}
   function field(label,value,onChange,props={}){return h('label',{className:'ld-field'},h('span',null,label),h('input',{className:'field','aria-label':label,value,onChange:event=>onChange(event.target.value),...props}));}
-  return h('section',{className:'set-block ld-cloud-panel'},h('h3',{className:'set-name'},'☁️ 双人实时同步'),h('p',{className:'set-desc'},'两端连接同一个项目、使用相同空间码。保存后，待办、纪念日和共同片单会自动更新。'),
+  return h('section',{className:'set-block ld-cloud-panel'},h('h3',{className:'set-name'},'☁️ 双人实时同步'),h('p',{className:'set-desc'},'两端连接同一个项目、使用相同空间码。保存后，待办、纪念日、课表和共同片单会自动更新。'),
     h('details',{open:!url||!key},h('summary',null,'项目连接信息'),field('Supabase Project URL',url,setUrl,{placeholder:'https://xxxxx.supabase.co',type:'url',autoComplete:'off'}),field('Publishable / anon Key',key,setKey,{placeholder:'sb_publishable_…',type:'password',autoComplete:'off'})),
     field('共享空间码',room,setRoom,{placeholder:'输入 TA 的空间码，或点击生成',autoComplete:'off',spellCheck:false}),
     h('div',{className:'ld-actions'},h('button',{className:'mini-btn',disabled:busy,onClick:()=>{setRoom(crypto.randomUUID().replace(/-/g,''));setMessage('新空间码已生成，点击连接后发给另一半。原空间的数据会保留。');}},'生成新空间码'),h('button',{className:'mini-btn',disabled:busy,onClick:()=>test(false)},'测试连接'),h('button',{className:'primary-btn',disabled:busy,onClick:()=>test(true)},busy?'连接中…':'连接共享空间')),

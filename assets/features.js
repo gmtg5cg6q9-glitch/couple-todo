@@ -1,9 +1,10 @@
 // Readable additions to the original published application. No build step needed.
 import {reportSync} from './live.js';
+import {TIMETABLE_KEY,validateTimetableRecord} from './timetable.js';
 let R, h, api;
 let SharedContext;
 export function configureFeatures(react, services) { R = react; h = react.createElement; api = services; }
-export const KEYS = ['couple-todo-v2','couple-anniv-v1','couple-start','couple-profile-v1','tale.cities','tale.photoMode','couple-watchlist-v1'];
+export const KEYS = ['couple-todo-v2','couple-anniv-v1','couple-start','couple-profile-v1','tale.cities','tale.photoMode','couple-watchlist-v1',TIMETABLE_KEY];
 export function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
 export function localDate(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; }
 export function parseDate(value) {
@@ -151,6 +152,7 @@ export function validateBackup(value) {
     if(key==='couple-anniv-v1'&&data.some(item=>typeof item.title!=='string'||(item.type==='lunar'?!(item.lMonth>=1&&item.lMonth<=12&&item.lDay>=1&&item.lDay<=30):!parseDate(item.date))))throw Error('纪念日记录无效');
     if(key==='tale.cities'&&data.some(item=>typeof item.name!=='string'||typeof item.note!=='string'))throw Error('城市记录无效');
     if(key==='couple-watchlist-v1'&&data.some(item=>typeof item.title!=='string'||!['want','watched'].includes(item.status)))throw Error('片单记录无效');
+    if(key===TIMETABLE_KEY)data.forEach(validateTimetableRecord);
   }
   if(!Array.isArray(value.photos)||value.photos.length>500)throw Error('照片备份格式无效');
   for(const item of value.photos) if(!item||typeof item.id!=='string'||typeof item.name!=='string'||typeof item.data!=='string'||!/^data:image\/(jpeg|png|webp|gif|avif);base64,[A-Za-z0-9+/=]+$/.test(item.data))throw Error('照片数据无效');
@@ -184,17 +186,18 @@ export function ProfileSettings() {
         const photos=incoming.photos.map(item=>{const bytes=Uint8Array.from(atob(item.data.split(',')[1]),c=>c.charCodeAt(0));const type=item.data.slice(5,item.data.indexOf(';'));const {data,...record}=item;return {...record,type,blob:new Blob([bytes],{type})};});
         await api.restorePhotos(photos);
       } catch(error) {for(const [key,value]of Object.entries(old))value===null?localStorage.removeItem(key):localStorage.setItem(key,value);throw error;}
+      if(Object.hasOwn(incoming.data,TIMETABLE_KEY))window.dispatchEvent(new StorageEvent('storage',{key:TIMETABLE_KEY}));
       setIncoming(null);setInfo(profile());setStart(localStorage.getItem('couple-start')||'2023-02-14');setMessage('恢复完成。返回各页面即可查看；云端记录未改动。');
     } catch {setMessage('恢复失败，原设置已保留，请检查设备存储空间。');}finally{setBusy(false);}
   }
   async function migrate() {
     setBusy(true);
-    try {for(const [kind,key]of [['todos','couple-todo-v2'],['anniv','couple-anniv-v1']])for(const record of readJSON(key,[]))await api.upsert(kind,record);setMessage('本机待办和纪念日已复制到当前云端空间。');}catch{setMessage('迁移未完成，已保留全部本机数据，可联网后重新执行。');}finally{setBusy(false);}
+    try {for(const [kind,key]of [['todos','couple-todo-v2'],['anniv','couple-anniv-v1'],['timetable',TIMETABLE_KEY]])for(const record of readJSON(key,[]))await api.upsert(kind,record);setMessage('本机待办、纪念日和课表已复制到当前云端空间。');}catch{setMessage('迁移未完成，已保留全部本机数据，可联网后重新执行。');}finally{setBusy(false);}
   }
   return h(R.Fragment,null,h('section',{className:'set-block'},h('h3',{className:'set-name'},'💛 我们的资料'),h('form',{onSubmit:e=>{e.preventDefault();if(!parseDate(start)||start>localDate()){setMessage('请选择今天或更早的有效开始日期');return;}try{saveJSON('couple-profile-v1',info);localStorage.setItem('couple-start',start);setMessage('资料已保存，首页天数从开始当天计为第 1 天。');}catch{setMessage('存储空间不足，保存失败。');}}},h('div',{className:'ld-columns'},h(Field,{label:'你的昵称',value:info.you,maxLength:20,required:true,onChange:e=>setInfo({...info,you:e.target.value})}),h(Field,{label:'TA 的昵称',value:info.partner,maxLength:20,required:true,onChange:e=>setInfo({...info,partner:e.target.value})})),h(Field,{label:'在一起的第一天',type:'date',max:localDate(),value:start,required:true,onChange:e=>setStart(e.target.value)}),h('button',{className:'primary-btn',type:'submit'},'保存我们的资料'))),
-    h('section',{className:'set-block'},h('h3',{className:'set-name'},'📦 数据备份与恢复'),h('p',{className:'set-desc'},'导出本机待办、纪念日、城市、片单、昵称和照片。恢复会替换备份内的列表，同标识照片会覆盖，其余照片保留。云端连接信息不导出。'),h('div',{className:'ld-actions'},h(Button,{disabled:busy,onClick:backup},busy?'处理中…':'导出备份'),h('label',{className:'mini-btn'},'选择备份文件',h('input',{'aria-label':'选择备份文件',type:'file',accept:'.json,application/json',disabled:busy,onChange:importFile}))),
+    h('section',{className:'set-block'},h('h3',{className:'set-name'},'📦 数据备份与恢复'),h('p',{className:'set-desc'},'导出本机待办、纪念日、课表、城市、片单、昵称和照片。恢复会替换备份内的列表，同标识照片会覆盖，其余照片保留。云端连接信息不导出。'),h('div',{className:'ld-actions'},h(Button,{disabled:busy,onClick:backup},busy?'处理中…':'导出备份'),h('label',{className:'mini-btn'},'选择备份文件',h('input',{'aria-label':'选择备份文件',type:'file',accept:'.json,application/json',disabled:busy,onChange:importFile}))),
       incoming&&h('div',{className:'ld-notice'},h('p',null,`备份包含 ${Object.keys(incoming.data).length} 类数据、${incoming.photos.length} 张照片。确认后替换对应本机列表，建议先导出当前备份。`),h(Button,{disabled:busy,onClick:restore},'确认恢复到本机'),h(Button,{disabled:busy,onClick:()=>setIncoming(null)},'取消恢复')),
-      api.enabled()&&h('div',null,h('p',{className:'set-desc'},'启用云端后使用独立空间。需要将原本机待办和纪念日带过去时，可执行一次复制。'),h(Button,{disabled:busy,onClick:migrate},'复制本机记录到当前云端'))),h('p',{role:'status',className:'ld-notice'},message));
+      api.enabled()&&h('div',null,h('p',{className:'set-desc'},'启用云端后使用独立空间。可将本机待办、纪念日和课表复制到当前空间，同标识的记录会更新。'),h(Button,{disabled:busy,onClick:migrate},'复制本机记录到当前云端'))),h('p',{role:'status',className:'ld-notice'},message));
 }
 export function MovieActions({movie}) {
   const {items:list,mutate}=useSharedWatchlist();
