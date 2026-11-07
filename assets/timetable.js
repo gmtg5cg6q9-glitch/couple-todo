@@ -287,6 +287,8 @@ export function TimetablePage({ collection }) {
   const [removed, setRemoved] = R.useState(null);
   const [message, setMessage] = R.useState('');
   const [importing, setImporting] = R.useState(false);
+  const [coursePicker, setCoursePicker] = R.useState(null);
+  const menu = R.useRef(null);
   const { items, status, mutate, mutateMany, retry } = collection;
   const records = items.filter(usable);
   const people = person === 'both' ? Object.keys(PEOPLE) : [person];
@@ -300,11 +302,26 @@ export function TimetablePage({ collection }) {
   const listed = courses.filter(course => people.includes(course.person));
   const current = listed.filter(course => parseWeeks(course.weekText, course.parity).includes(weeks[course.person]));
   const activeDay = dayIndex(date);
+  const lastPeriod = Math.max(10, ...listed.map(course => course.last));
+  const slotGroups = Array.from({ length: Math.ceil(lastPeriod / 2) }, (_, index) => {
+    const first = index * 2 + 1;
+    const last = Math.min(first + 1, lastPeriod);
+    const times = [];
+    for (let slot = first; slot <= last; slot++) {
+      for (const boundary of ['start', 'end']) {
+        const field = boundary === 'start' ? 'first' : 'last';
+        const values = new Set(listed.filter(course => course[field] === slot && course[boundary]).map(course => course[boundary]));
+        if (values.size === 1) times.push(...values);
+      }
+    }
+    return { first, last, times: [...new Set(times)].sort() };
+  });
   const jumpToDate = event => {
     if (validDate(event.target.value)) setDate(event.target.value);
   };
 
   function open(draft) {
+    setCoursePicker(null);
     setError('');
     setConflict('');
     setEdit(draft);
@@ -353,18 +370,43 @@ export function TimetablePage({ collection }) {
     setMessage('');
     setEdit(null);
   }
-  function courseButton(course, compact = false) {
+  function courseButton(group, day) {
+    const course = group.courses[0];
+    const extra = group.courses.length - 1;
+    const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
     return h('button', {
       type: 'button', key: course.id,
-      className: 'tt-course tt-' + course.person + (compact ? ' tt-course-wide' : ''),
-      onClick: () => open(course),
-      'aria-label': '编辑课程 ' + course.title + ' · ' + PEOPLE[course.person].label,
-    }, h('span', { className: 'tt-course-kicker' }, PEOPLE[course.person].short + ' · ' + courseTime(course)),
-    h('strong', null, course.title),
+      className: 'tt-course tt-color-' + color,
+      style: { gridColumn: day + 2, gridRow: (group.first + 1) + ' / ' + (group.last + 2) },
+      onClick: () => extra ? setCoursePicker(group.courses) : open(course),
+      'aria-label': extra ? DAYS[day] + ' ' + group.courses.length + ' 门时间重叠的课程'
+        : '编辑课程 ' + course.title + ' · ' + PEOPLE[course.person].label,
+    }, h('strong', null, course.title),
     course.room && h('span', null, course.room),
-    compact && course.teacher && h('span', null, course.teacher));
+    course.teacher && h('span', null, course.teacher),
+    h('small', null, extra ? '+' + extra + ' 门' : (person === 'both' ? PEOPLE[course.person].short + ' · ' : '') + courseTime(course)));
   }
-  const coursesOn = day => current.filter(course => course.day === day).sort(courseOrder);
+  function groupsOn(day) {
+    const groups = [];
+    const ordered = current.filter(course => course.day === day).sort((a, b) => a.first - b.first || courseOrder(a, b));
+    for (const course of ordered) {
+      const previous = groups.at(-1);
+      if (previous && course.first <= previous.last) {
+        previous.last = Math.max(previous.last, course.last);
+        previous.courses.push(course);
+      } else {
+        groups.push({ first: course.first, last: course.last, courses: [course] });
+      }
+    }
+    return groups;
+  }
+  function fromMenu(action) {
+    if (menu.current) {
+      menu.current.open = false;
+      menu.current.querySelector('summary').focus();
+    }
+    action();
+  }
   const field = (label, key, props = {}) => h(Field, {
     label, value: edit[key], change: value => change(key, props.type === 'number' || props.numeric ? Number(value) : value),
     ...Object.fromEntries(Object.entries(props).filter(([name]) => name !== 'numeric')),
@@ -376,50 +418,53 @@ export function TimetablePage({ collection }) {
     return '第 ' + weeks[key] + ' 教学周';
   };
 
-  return h('section', { className: 'card tt-page', 'aria-labelledby': 'tt-title' },
-    h('header', { className: 'tt-header' },
-      h('p', { className: 'tt-eyebrow' }, 'OUR LITTLE DAYS / CAMPUS LIFE'),
-      h('h2', { className: 'view-title', id: 'tt-title' }, '我们的研究生课表'),
-      h('p', { className: 'view-sub' }, '两所校园，同一周的学习日程')),
-    h('div', { className: 'tt-schools' }, Object.entries(PEOPLE).map(([key, member]) =>
-      h('article', { className: 'tt-school tt-' + key, key },
-        h('div', null, h('span', { className: 'tt-school-caption' }, member.label + ' · 研究生'),
-          h('h3', null, member.school),
-          h('p', null, [terms[key]?.label, termState(key)].filter(Boolean).join(' · '))),
-        h(Button, { onClick: () => open(termDraft(key, terms[key])), 'aria-label': member.school + '学期设置' }, '学期设置')))),
+  const visibleWeeks = [...new Set(people.map(key => weeks[key]).filter(Boolean))];
+  return h('section', { className: 'tt-page', 'aria-labelledby': 'tt-title' },
+    h('header', { className: 'tt-weekbar' },
+      h('div', { className: 'tt-week-range' },
+        h('h2', { id: 'tt-title' }, (visibleWeeks.length === 1 ? '第' + visibleWeeks[0] + '周' : '周课表') + ' ' + date.split('-').map(Number).join('/')),
+        h('p', null, (monday === mondayOf(today) ? '本周' : shortDate(monday) + ' – ' + shortDate(days[6].date))
+          + ' · ' + current.length + ' 次课程')),
+      h('div', { className: 'tt-week-controls', 'aria-label': '课表日期' },
+        h(Button, { className: 'tt-nav', onClick: () => setDate(shiftDays(date, -7)), 'aria-label': '上一周' }, '‹'),
+        h(Button, { className: 'tt-nav', onClick: () => setDate(shiftDays(date, 7)), 'aria-label': '下一周' }, '›'),
+        h('details', { className: 'tt-menu', ref: menu, onKeyDown: event => {
+          if (event.key === 'Escape' && menu.current?.open) { menu.current.open = false; menu.current.querySelector('summary').focus(); }
+        } },
+          h('summary', { 'aria-label': '课表菜单' }, '···'),
+          h('div', { className: 'tt-menu-panel' },
+            h(Button, { onClick: () => fromMenu(() => setDate(today)) }, '回到今天'),
+            h(Button, { onClick: () => fromMenu(() => add()) }, '添加课程'),
+            h(Button, { onClick: () => fromMenu(() => setImporting(true)) }, '导入课表'),
+            Object.entries(PEOPLE).map(([key, member]) => h(Button, {
+              key, onClick: () => fromMenu(() => open(termDraft(key, terms[key]))),
+              'aria-label': member.school + '学期设置',
+            }, member.short + '学期设置')),
+            h('label', { className: 'ld-field' }, '跳转到日期',
+              h('input', {
+                className: 'field', type: 'date', value: date, min: '2000-01-01', max: '2099-12-31',
+                onChange: jumpToDate, onInput: jumpToDate,
+              })))))),
     h('div', { className: 'tt-tools' },
       h('div', { className: 'tt-switch', role: 'group', 'aria-label': '课表成员' },
         [['both', '双人'], ...Object.entries(PEOPLE).map(([key, member]) => [key, member.label])].map(([key, label]) =>
           h(Button, { key, className: 'tt-switch-btn', 'aria-pressed': person === key, onClick: () => setPerson(key) }, label))),
-      h('div', { className: 'tt-actions' },
-        h(Button, { onClick: () => setImporting(true) }, '导入课表'),
-        h(Button, { className: 'primary-btn tt-add', onClick: () => add() }, '＋ 添加课程'))),
-    h('div', { className: 'tt-weekbar', 'aria-label': '课表日期' },
-      h(Button, { onClick: () => setDate(shiftDays(date, -7)), 'aria-label': '上一周' }, '‹'),
-      h('div', { className: 'tt-week-range' },
-        h('strong', null, shortDate(monday) + ' – ' + shortDate(days[6].date)),
-        h('small', null, monday.slice(0, 4) + ' 年 · ' + current.length + ' 次课程')),
-      h(Button, { onClick: () => setDate(shiftDays(date, 7)), 'aria-label': '下一周' }, '›'),
-      h(Button, { onClick: () => setDate(today) }, '回到今天'),
-      h('input', {
-        className: 'field tt-jump', type: 'date', 'aria-label': '跳转到日期', value: date,
-        min: '2000-01-01', max: '2099-12-31', onChange: jumpToDate, onInput: jumpToDate,
-      })),
+      h('p', { className: 'tt-term-summary' }, people.map(key => PEOPLE[key].short + ' · ' + termState(key)).join(' / '))),
     !people.some(key => terms[key]) && h('div', { className: 'tt-intro' },
       h('strong', null, '从第一教学周开始'),
       h('p', null, '先为两所学校分别设置第一教学周的星期一，再录入课程。两人开学日期不同时，教学周会分别计算。')),
-    h('div', { className: 'tt-week-grid', 'aria-label': '每周课表' }, days.map(day =>
-      h('section', { key: day.date, className: 'tt-day' + (day.date === today ? ' tt-today' : '') },
-        h('header', null, h('strong', null, day.label), h('small', null, shortDate(day.date))),
-        coursesOn(day.day).map(course => courseButton(course)),
-        !coursesOn(day.day).length && h('span', { className: 'tt-empty-day' }, '—')))),
-    h('section', { className: 'tt-mobile', 'aria-label': '按天查看课表' },
-      h('div', { className: 'tt-day-picker', role: 'group', 'aria-label': '选择星期' }, days.map(day =>
-        h(Button, { key: day.date, className: 'tt-day-button', onClick: () => setDate(day.date), 'aria-pressed': day.date === date },
-          h('strong', null, day.label), h('small', null, shortDate(day.date))))),
-      h('div', { className: 'tt-day-agenda' },
-        coursesOn(activeDay).map(course => courseButton(course, true)),
-        !coursesOn(activeDay).length && h('p', null, DAYS[activeDay] + '暂无课程安排'))),
+    h('div', { className: 'tt-week-grid', 'aria-label': '每周课表', style: { '--tt-periods': lastPeriod } },
+      h('div', { className: 'tt-column-head tt-axis-head' }, h('span', null, '日期'), h('small', null, '节次')),
+      days.map(day => h('div', {
+        key: day.date, className: 'tt-column-head' + (day.date === today ? ' tt-today' : ''),
+        style: { gridColumn: day.day + 2 }, 'aria-current': day.date === today ? 'date' : undefined,
+      }, h('strong', null, day.label), h('small', null, shortDate(day.date)))),
+      slotGroups.map(({ first, last, times }) => h(R.Fragment, { key: first },
+        h('div', { className: 'tt-row-line', 'aria-hidden': true, style: { gridRow: (first + 1) + ' / ' + (last + 2) } }),
+        h('div', { className: 'tt-period', style: { gridRow: (first + 1) + ' / ' + (last + 2) } },
+          h('strong', null, first === last ? first : first + '–' + last),
+          times.map(time => h('small', { key: time }, time))))),
+      days.flatMap(day => groupsOn(day.day).map(group => courseButton(group, day.day)))),
     h('details', { className: 'tt-manager' },
       h('summary', null, '课程管理 · ' + listed.length + ' 条'),
       listed.length ? h('ul', null, [...listed].sort((a, b) => a.day - b.day || courseOrder(a, b)).map(course =>
@@ -432,6 +477,9 @@ export function TimetablePage({ collection }) {
       h(Button, { onClick: () => { if (mutate(removed.id, removed)) { setRemoved(null); setMessage('课程已恢复'); } } }, '撤销删除')),
     h('p', { className: 'tt-status', role: 'status' }, message ? message + ' · ' + status : status,
       api.enabled() && h(Button, { onClick: retry }, '重新同步')),
+    coursePicker && h(Editor, { title: '同一时段的课程', close: () => setCoursePicker(null), submit: () => {} },
+      coursePicker.map(course => h(Button, { key: course.id, onClick: () => open(course) },
+        PEOPLE[course.person].short + ' · ' + course.title + ' · ' + periodLabel(course)))),
     importing && h(ImportEditor, {
       initialPerson: person === 'both' ? people.find(key => terms[key]) || 'girl' : person,
       terms, courses, close: () => setImporting(false),
