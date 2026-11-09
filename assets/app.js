@@ -31049,7 +31049,7 @@ function uk({ timetable }) {
               children: [
                 t === "home" && o.jsx(ck, { onChange: e }),
                 t === "todo" && o.jsx(v1, { pendingAdd: n }),
-                t === "timetable" && o.jsx(TimetablePage, { collection: timetable, onNavigate: e }),
+                t === "timetable" && o.jsx(TimetablePage, { collection: timetable }),
                 t === "anniv" && o.jsx(O1, {}),
                 t === "photos" && o.jsx(s2, {}),
                 t === "games" && o.jsx(x2, {}),

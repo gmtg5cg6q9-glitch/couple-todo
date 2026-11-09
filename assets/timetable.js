@@ -283,24 +283,7 @@ const GUET_TIMES = [
   '14:30 15:15 15:20 16:05', '16:30 17:15 17:20 18:05',
   '19:30 20:15 20:25 21:10',
 ];
-const GUET_ICONS = {
-  timetable: 'M8 5H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h1 M8 5V3h8v3 M8 8h12v13H8z M8 12h12 M11 15h1m4 0h1m-6 3h1m4 0h1',
-  home: 'M4 11v9h16v-9 M3 8l2-5h14l2 5v3a3 3 0 0 1-5 2 3 3 0 0 1-4 0 3 3 0 0 1-4 0 3 3 0 0 1-5-2z M9 3l-1 8m7-8 1 8',
-  hub: 'M3 4h18v13H9l-6 5z M7 8h10 M7 12h7',
-  settings: 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21v-2c0-2.8 3.6-5 8-5s8 2.2 8 5v2z',
-};
-function GuetNav({ today, openHub, onNavigate }) {
-  return h('nav', { className: 'tt-guet-nav', 'aria-label': '桂电课表导航' }, [
-    ['timetable', '课表', today], ['home', '生活圈', () => onNavigate('home')],
-    ['hub', 'HUB', openHub], ['settings', '我的', () => onNavigate('settings')],
-  ].map(([key, label, action]) => h('button', {
-    key, type: 'button', onClick: action, 'aria-current': key === 'timetable' ? 'page' : undefined,
-  }, h('span', null, h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
-    strokeWidth: 2, strokeLinejoin: 'round', strokeLinecap: 'round', 'aria-hidden': true },
-  h('path', { d: GUET_ICONS[key] }))), label)));
-}
-
-export function TimetablePage({ collection, onNavigate }) {
+export function TimetablePage({ collection }) {
   const [person, setPerson] = R.useState(() => collection.items.some(item => item.id === 'term-girl')
     && !collection.items.some(item => item.id === 'term-boy') ? 'girl' : 'boy');
   const [date, setDate] = R.useState(todayInChina);
@@ -311,16 +294,10 @@ export function TimetablePage({ collection, onNavigate }) {
   const [message, setMessage] = R.useState('');
   const [importing, setImporting] = R.useState(false);
   const [coursePicker, setCoursePicker] = R.useState(null);
-  const [panel, setPanel] = R.useState(null);
   const menu = R.useRef(null);
   const { items, status, mutate, mutateMany, retry } = collection;
   const records = items.filter(usable);
   const guet = person === 'boy';
-  R.useEffect(() => {
-    if (!guet || !message) return;
-    const timer = setTimeout(() => setMessage(''), 3500);
-    return () => clearTimeout(timer);
-  }, [guet, message]);
   const people = person === 'both' ? Object.keys(PEOPLE) : [person];
   const terms = Object.fromEntries(Object.keys(PEOPLE).map(key =>
     [key, records.find(record => record.id === 'term-' + key)]));
@@ -332,13 +309,7 @@ export function TimetablePage({ collection, onNavigate }) {
   const listed = courses.filter(course => people.includes(course.person));
   const current = listed.filter(course => parseWeeks(course.weekText, course.parity).includes(weeks[course.person]));
   const activeDay = dayIndex(date);
-  // A late class can use the free evening cell, with its actual start shown on the card.
-  const positions = current.map(course => {
-    const useEvening = guet && course.first === 11 && course.last === 11 && course.start >= '21:10'
-      && !current.some(other => other.id !== course.id && other.day === course.day && other.first <= 11 && other.last >= 9);
-    return { course, first: useEvening ? 9 : course.first, last: useEvening ? 10 : course.last, useEvening };
-  });
-  const lastPeriod = Math.max(10, ...(guet ? positions : listed).map(course => course.last));
+  const lastPeriod = Math.max(10, ...(guet ? current : listed).map(course => course.last));
   const slotsPerRow = person === 'girl' ? 1 : 2;
   const slotGroups = Array.from({ length: Math.ceil(lastPeriod / slotsPerRow) }, (_, index) => {
     const first = index * slotsPerRow + 1;
@@ -358,7 +329,6 @@ export function TimetablePage({ collection, onNavigate }) {
   };
 
   function open(draft) {
-    setPanel(null);
     setCoursePicker(null);
     setError('');
     setConflict('');
@@ -411,28 +381,24 @@ export function TimetablePage({ collection, onNavigate }) {
   function courseButton(group, day) {
     const course = group.courses[0];
     const extra = group.courses.length - 1;
-    const color = guet && /光电探测/.test(course.title) ? 0 : guet && /光子学/.test(course.title) ? 1
-      : guet && (group.useEvening || /心理/.test(course.title)) ? 2
-      : [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
-    const text = [group.useEvening ? course.start : '', course.room?.startsWith('网络课程') ? '网课' : course.room]
-      .filter(Boolean).join(' ') + (course.room || group.useEvening ? '#' : '') + course.title
-      + (course.teacher ? '@' + course.teacher : '') + (extra ? ' +' + extra + '门' : '');
+    const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
+    const singlePeriod = guet && group.first === group.last;
     return h('button', {
       type: 'button', key: course.id + '-' + group.first,
-      className: 'tt-course tt-color-' + color,
-      style: { gridColumn: day + 2, gridRow: (group.first + 1) + ' / ' + (group.last + 2),
-        ...(guet ? { '--guet-span': group.last - group.first + 1 } : {}) },
+      className: 'tt-course tt-color-' + color + (singlePeriod ? ' tt-course-single' : ''),
+      style: { gridColumn: day + 2, gridRow: (group.first + 1) + ' / ' + (group.last + 2) },
       onClick: () => extra ? setCoursePicker(group.courses) : open(course),
       'aria-label': extra ? DAYS[day] + ' ' + group.courses.length + ' 门时间重叠的课程'
         : '编辑课程 ' + course.title + ' · ' + PEOPLE[course.person].label,
-    }, guet ? h('span', { className: 'tt-guet-course-text' }, text) : h(R.Fragment, null, h('strong', null, course.title),
-    course.room && h('span', null, course.room),
-    course.teacher && h('span', null, course.teacher),
-    h('small', null, extra ? '+' + extra + ' 门' : (person === 'both' ? PEOPLE[course.person].short + ' · ' : '') + courseTime(course))));
+    }, h('strong', null, course.title),
+    !singlePeriod && course.room && h('span', { className: 'tt-room' }, course.room),
+    !guet && course.teacher && h('span', null, course.teacher),
+    h('small', null, extra ? '+' + extra + ' 门' : guet ? course.start || periodLabel(course)
+      : (person === 'both' ? PEOPLE[course.person].short + ' · ' : '') + courseTime(course)));
   }
   function groupsOn(day) {
     const groups = [];
-    const ordered = positions.filter(item => item.course.day === day).sort((a, b) => a.first - b.first || courseOrder(a.course, b.course));
+    const ordered = current.filter(course => course.day === day).sort((a, b) => a.first - b.first || courseOrder(a, b));
     for (const item of ordered) {
       const previous = groups.at(-1);
       if (previous && item.first <= previous.last) {
@@ -443,12 +409,12 @@ export function TimetablePage({ collection, onNavigate }) {
       }
     }
     return groups.flatMap(group => {
-      if (!guet) return [{ ...group, courses: group.items.map(item => item.course) }];
+      if (!guet) return [{ ...group, courses: group.items }];
       const blocks = [];
       for (let first = group.first; first <= group.last;) {
         const last = Math.min(group.last, first + first % 2);
-        const items = group.items.filter(item => item.first <= last && item.last >= first);
-        blocks.push({ first, last, courses: items.map(item => item.course), useEvening: items[0]?.useEvening });
+        const courses = group.items.filter(course => course.first <= last && course.last >= first);
+        blocks.push({ first, last, courses });
         first = last + 1;
       }
       return blocks;
@@ -474,10 +440,7 @@ export function TimetablePage({ collection, onNavigate }) {
 
   const visibleWeeks = [...new Set(people.map(key => weeks[key]).filter(Boolean))];
   const inCurrentWeek = monday === mondayOf(today);
-  const minutesIntoWeek = Math.max(0, Math.floor((Date.now() - Date.parse(monday + 'T00:00:00+08:00')) / 60000));
-  const weekSubtitle = guet && inCurrentWeek
-    ? '本周/' + Math.floor(minutesIntoWeek / 60) + '小时' + minutesIntoWeek % 60 + '分 前'
-    : (inCurrentWeek ? '本周' : shortDate(monday) + ' – ' + shortDate(days[6].date)) + ' · ' + current.length + ' 次课程';
+  const weekSubtitle = (inCurrentWeek ? '本周' : shortDate(monday) + ' – ' + shortDate(days[6].date)) + ' · ' + current.length + ' 次课程';
   const memberSwitch = h('div', { className: 'tt-switch', role: 'group', 'aria-label': '课表成员' },
     [['both', '双人'], ...Object.entries(PEOPLE).map(([key, member]) => [key, member.label])].map(([key, label]) =>
       h(Button, { key, className: 'tt-switch-btn', 'aria-pressed': person === key, onClick: () => {
@@ -503,13 +466,9 @@ export function TimetablePage({ collection, onNavigate }) {
         } },
           h('summary', { 'aria-label': '课表菜单' }, '···'),
           h('div', { className: 'tt-menu-panel' },
-            guet && memberSwitch,
             h(Button, { onClick: () => fromMenu(() => setDate(today)) }, '回到今天'),
             h(Button, { onClick: () => fromMenu(() => add()) }, '添加课程'),
             h(Button, { onClick: () => fromMenu(() => setImporting(true)) }, '导入课表'),
-            guet && h(Button, { onClick: () => fromMenu(() => setPanel('manage')) }, '课程管理 · ' + listed.length + ' 条'),
-            guet && api.enabled() && h(Button, { onClick: retry }, '重新同步'),
-            guet && h('p', { className: 'tt-status' }, status),
             Object.entries(PEOPLE).map(([key, member]) => h(Button, {
               key, onClick: () => fromMenu(() => open(termDraft(key, terms[key]))),
               'aria-label': member.school + '学期设置',
@@ -519,9 +478,9 @@ export function TimetablePage({ collection, onNavigate }) {
                 className: 'field', type: 'date', value: date, min: '2000-01-01', max: '2099-12-31',
                 onChange: jumpToDate, onInput: jumpToDate,
               })))))),
-    !guet && h('div', { className: 'tt-tools' }, memberSwitch,
+    h('div', { className: 'tt-tools' }, memberSwitch,
       h('p', { className: 'tt-term-summary' }, people.map(key => PEOPLE[key].short + ' · ' + termState(key)).join(' / '))),
-    !guet && !people.some(key => terms[key]) && h('div', { className: 'tt-intro' },
+    !people.some(key => terms[key]) && h('div', { className: 'tt-intro' },
       h('strong', null, '从第一教学周开始'),
       h('p', null, '先为两所学校分别设置第一教学周的星期一，再录入课程。两人开学日期不同时，教学周会分别计算。')),
     h('div', { className: 'tt-calendar-scroll' }, h('div', { className: 'tt-week-grid', 'aria-label': '每周课表', style: { '--tt-periods': lastPeriod } },
@@ -533,20 +492,14 @@ export function TimetablePage({ collection, onNavigate }) {
       slotGroups.map(({ first, last, times }) => h(R.Fragment, { key: first },
         h('div', { className: 'tt-row-line', 'aria-hidden': true, style: { gridRow: (first + 1) + ' / ' + (last + 2) } }),
         h('div', { className: 'tt-period', style: { gridRow: (first + 1) + ' / ' + (last + 2) } },
-          h('strong', null, first === last ? '第' + first + '节' : first + (guet ? ' ' : '–') + last),
+          h('strong', null, first === last ? '第' + first + '节' : first + '–' + last),
           times.map(time => h('small', { key: time }, time))))),
       days.flatMap(day => groupsOn(day.day).map(group => courseButton(group, day.day))))),
-    guet ? h(GuetNav, { today: () => setDate(today), openHub: () => setPanel('hub'), onNavigate })
-      : h('details', { className: 'tt-manager' }, h('summary', null, '课程管理 · ' + listed.length + ' 条'), manager),
+    h('details', { className: 'tt-manager' }, h('summary', null, '课程管理 · ' + listed.length + ' 条'), manager),
     removed && h('div', { className: 'ld-notice', role: 'status' }, '已删除「' + removed.title + '」',
       h(Button, { onClick: () => { if (mutate(removed.id, removed)) { setRemoved(null); setMessage('课程已恢复'); } } }, '撤销删除')),
-    h('p', { className: guet && message ? 'tt-status tt-guet-message' : 'tt-status', role: 'status' },
-      guet && message ? message : message ? message + ' · ' + status : status,
-      !guet && api.enabled() && h(Button, { onClick: retry }, '重新同步')),
-    panel && h(Editor, { title: panel === 'manage' ? '课程管理 · ' + listed.length + ' 条' : 'HUB', close: () => setPanel(null), submit: () => {} },
-      panel === 'manage' ? h('div', { className: 'tt-manager' }, manager)
-        : [['todo', '待办'], ['anniv', '纪念日'], ['photos', '照片'], ['games', '游戏'], ['movies', '影视']]
-          .map(([key, label]) => h(Button, { key, onClick: () => onNavigate(key) }, label))),
+    h('p', { className: 'tt-status', role: 'status' }, message ? message + ' · ' + status : status,
+      api.enabled() && h(Button, { onClick: retry }, '重新同步')),
     coursePicker && h(Editor, { title: '同一时段的课程', close: () => setCoursePicker(null), submit: () => {} },
       coursePicker.map(course => h(Button, { key: course.id, onClick: () => open(course) },
         PEOPLE[course.person].short + ' · ' + course.title + ' · ' + periodLabel(course)))),
