@@ -233,3 +233,88 @@
   .tt-guet .tt-course { padding: 3px 1px; }
   .tt-guet .tt-course small { font-size: 8px; }
 }
+
+/* Mobile day view: one day at a time as a timeline, instead of the 7-column week grid. */
+.tt-mobile { margin-top: 2px; }
+.tt-day-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 12px 10px;
+  scrollbar-width: none;
+}
+.tt-day-chips::-webkit-scrollbar { display: none; }
+.tt-day-chip {
+  flex: 0 0 auto;
+  width: 47px;
+  padding: 7px 0 6px;
+  border: 1px solid var(--tt-line);
+  border-radius: 13px;
+  background: #fffdf7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font: inherit;
+  color: var(--tt-muted);
+  cursor: pointer;
+}
+.tt-day-chip small { font-size: 11px; }
+.tt-day-chip strong { font-size: 16px; line-height: 1.1; color: var(--tt-ink); font-variant-numeric: tabular-nums; }
+.tt-day-chip.today strong { color: #4d761d; }
+.tt-day-chip.active { background: #dce8cb; border-color: #c3d6ab; color: #42602f; }
+.tt-day-chip.active strong { color: #304426; }
+.tt-page .tt-day-chip:focus-visible { outline: 2px solid #4f722a; outline-offset: 1px; }
+.tt-day-timeline { margin: 2px 12px 0; display: grid; gap: 10px; align-content: start; }
+.tt-m-course {
+  --tt-course-color: #8aa0b4;
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--tt-line);
+  border-left: 5px solid var(--tt-course-color);
+  border-radius: 14px;
+  background: #fffdf7;
+  padding: 11px 12px;
+}
+.tt-guet .tt-m-course { background: #fffdf7; }
+.tt-m-time {
+  flex: 0 0 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-right: 1px dashed var(--tt-line);
+  padding-right: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.tt-m-time strong { font-size: 12px; color: var(--tt-ink); }
+.tt-m-time small { font-size: 10px; line-height: 1.3; color: var(--tt-muted); }
+.tt-m-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tt-m-body > strong { font-size: 14px; line-height: 1.35; color: #203c4c; overflow-wrap: anywhere; }
+.tt-m-body > span { font-size: 12px; line-height: 1.4; color: var(--tt-muted); overflow-wrap: anywhere; }
+.tt-m-body > small { font-size: 11px; color: var(--tt-muted); }
+.tt-m-empty {
+  text-align: center;
+  padding: 30px 0 22px;
+  color: var(--tt-muted);
+  font-size: 13px;
+  border: 1px dashed var(--tt-line);
+  border-radius: 14px;
+  background: #fffdf766;
+}
+.tt-add-day {
+  border: 1px dashed #bfcbb2;
+  border-radius: 14px;
+  background: transparent;
+  color: #4d6a35;
+  font: inherit;
+  font-size: 13px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+.tt-add-day:active { background: #edf0e3; }
+

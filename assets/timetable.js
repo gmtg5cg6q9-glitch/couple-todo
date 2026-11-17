@@ -97,6 +97,91 @@ export function findConflicts(course, others) {
 }
 
 const PARITY = { all: '每周', odd: '单周', even: '双周' };
+
+// 两校本学期课表（按学校教务系统导出整理）。首教学周：海大 2026-09-07、桂电 2026-09-14。
+// 仅用于首次引导：只补缺、不覆盖；学期已按其他日期设置时跳过，避免周次错位。
+const TT_BUILTIN = {
+  girl: {
+    term: { label: '2026–2027 学年第一学期', firstMonday: '2026-09-07', length: 20 },
+    courses: [
+      { title: '工程优化方法及应用', day: 0, first: 1, last: 4, start: '07:40', end: '11:25', weekText: '3', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '工程伦理', day: 0, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '4', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '分子影像概论', day: 0, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-3', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '生物医学图像处理', day: 0, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '专业前沿研讨', day: 1, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '电子系统综合设计', day: 1, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '建模与仿真', day: 1, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '学术道德规范', day: 1, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '现代传感器技术', day: 1, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '2-5,7-10', parity: 'all', room: '生医工大楼B103', teacher: '' },
+      { title: '生物医学图像处理', day: 2, first: 1, last: 2, start: '07:40', end: '09:20', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '分子影像概论', day: 2, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '2-5,7-8', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '学术道德规范', day: 2, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '12-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
+      { title: '建模与仿真', day: 2, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '现代信号处理', day: 2, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '学术论文写作指导', day: 2, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '电子系统综合设计', day: 3, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '学术道德规范', day: 3, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '学术道德规范', day: 3, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '14-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
+      { title: '现代信号处理', day: 3, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '现代传感器技术', day: 4, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '2-3,6-10,12', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '分子影像概论', day: 5, first: 5, last: 10, start: '14:30', end: '21:00', weekText: '6-7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '工程优化方法及应用', day: 5, first: 5, last: 8, start: '14:30', end: '18:15', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '工程伦理', day: 5, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '分子影像概论', day: 6, first: 1, last: 4, start: '07:40', end: '11:25', weekText: '7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+    ],
+  },
+  boy: {
+    term: { label: '2026–2027 学年第一学期', firstMonday: '2026-09-14', length: 20 },
+    courses: [
+      { title: '自然辩证法概论', day: 5, first: 5, last: 8, start: '', end: '', weekText: '1-4', parity: 'all', room: '42教422304', teacher: '陈小玉' },
+      { title: '自然辩证法概论', day: 5, first: 5, last: 6, start: '', end: '', weekText: '5', parity: 'all', room: '42教422304', teacher: '陈小玉' },
+      { title: '光电探测及系统', day: 4, first: 7, last: 8, start: '', end: '', weekText: '6-17', parity: 'all', room: '学院实验室', teacher: '游道通' },
+      { title: 'AI赋能光子学应用', day: 3, first: 9, last: 10, start: '', end: '', weekText: '6-13', parity: 'all', room: '花江慧谷2号楼2-311会议室', teacher: '王东辉' },
+      { title: 'AI赋能光子学应用', day: 5, first: 9, last: 10, start: '', end: '', weekText: '5-12', parity: 'all', room: '花江慧谷2号楼2-311会议室', teacher: '王东辉' },
+      { title: '研究生的压力应对与健康心理', day: 6, first: 11, last: 11, start: '', end: '', weekText: '5-11', parity: 'all', room: '网络课程，关注研究生院后续通知。', teacher: '方正泓' },
+    ],
+  },
+};
+
+function builtinId(firstMonday, parts) {
+  const text = firstMonday + '|' + parts.join('|');
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index++) {
+    hash ^= text.codePointAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return 'builtin-' + hash.toString(36) + '-' + text.length;
+}
+
+function planBuiltinSeeds(items) {
+  const records = items.filter(usable);
+  const existingKeys = new Set(records.filter(record => record.type === 'course').map(record =>
+    JSON.stringify([record.person, record.title, record.day, record.first, record.last,
+      parseWeeks(record.weekText, record.parity)])));
+  const changes = [];
+  for (const [person, pack] of Object.entries(TT_BUILTIN)) {
+    const term = records.find(record => record.id === 'term-' + person);
+    // 学期已按其他日期设置时跳过整校数据，避免周次对不上。
+    if (term && term.firstMonday !== pack.term.firstMonday) continue;
+    const firstMonday = term ? term.firstMonday : pack.term.firstMonday;
+    if (!term) {
+      changes.push({
+        id: 'term-' + person,
+        value: { id: 'term-' + person, type: 'term', person, ...pack.term },
+      });
+    }
+    for (const course of pack.courses) {
+      const key = JSON.stringify([person, course.title, course.day, course.first, course.last,
+        parseWeeks(course.weekText, course.parity)]);
+      const id = builtinId(firstMonday,
+        [person, course.title, course.day, course.first, course.last, course.weekText, course.parity, course.room]);
+      if (existingKeys.has(key) || records.some(record => record.id === id)) continue;
+      existingKeys.add(key);
+      changes.push({ id, value: { ...course, id, type: 'course', person } });
+    }
+  }
+  return changes;
+}
 const termDraft = (person, term) => term || {
   id: 'term-' + person, type: 'term', person, label: '', firstMonday: '', length: 20,
 };
@@ -118,6 +203,16 @@ export function configureTimetable(react, services) {
 
 export function TimetableData({ children }) {
   const collection = api.useCollection('timetable', TIMETABLE_KEY);
+  const { items, mutateMany } = collection;
+  const seeding = R.useRef('');
+  R.useEffect(() => {
+    const changes = planBuiltinSeeds(items);
+    if (!changes.length) return;
+    const signature = changes.map(change => change.id).sort().join(',');
+    if (seeding.current === signature) return;
+    seeding.current = signature;
+    mutateMany(changes.map(({ id, value }) => ({ id, value })));
+  }, [items, mutateMany]);
   return children(collection);
 }
 
@@ -278,12 +373,44 @@ function ImportEditor({ initialPerson, terms, courses, close, save }) {
       busy ? '正在保存…' : preview ? '确认导入 ' + preview.additions.length + ' 条' : '预览导入')));
 }
 
+// 桂电每个时段两行：两节课的开始/结束时间；最后一行为第 11 节。
 const GUET_TIMES = [
   '08:25 09:10 09:15 10:00', '10:25 11:10 11:15 12:00',
   '14:30 15:15 15:20 16:05', '16:30 17:15 17:20 18:05',
-  '19:30 20:15 20:25 21:10',
+  '19:30 20:15 20:25 21:10', '21:20 22:05',
 ];
+// 海大（11 节）每节课的开始/结束时间。
+const HAINAN_TIMES = [
+  '07:40 08:25', '08:35 09:20', '09:45 10:30', '10:40 11:25',
+  '14:30 15:15', '15:25 16:10', '16:35 17:20', '17:30 18:15',
+  '19:20 20:05', '20:15 21:00', '21:10 21:55',
+];
+const PERIOD_TIMES = { boy: [], girl: HAINAN_TIMES };
+for (const row of GUET_TIMES) {
+  const parts = row.split(' ');
+  for (let index = 0; index < parts.length; index += 2) {
+    PERIOD_TIMES.boy.push(parts[index] + ' ' + parts[index + 1]);
+  }
+}
+function clockSpan(person, first, last) {
+  const table = PERIOD_TIMES[person];
+  if (!table) return '';
+  const start = table[first - 1], end = table[last - 1];
+  return start && end ? start.split(' ')[0] + '–' + end.split(' ')[1] : '';
+}
+function useNarrowTimetable() {
+  const [narrow, setNarrow] = R.useState(
+    typeof window < 'u' ? window.matchMedia('(max-width: 760px)').matches : false);
+  R.useEffect(() => {
+    const query = window.matchMedia('(max-width: 760px)');
+    const onChange = event => setNarrow(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
+}
 export function TimetablePage({ collection }) {
+  const narrow = useNarrowTimetable();
   const [person, setPerson] = R.useState(() => collection.items.some(item => item.id === 'term-girl')
     && !collection.items.some(item => item.id === 'term-boy') ? 'girl' : 'boy');
   const [date, setDate] = R.useState(todayInChina);
@@ -378,8 +505,26 @@ export function TimetablePage({ collection }) {
     setMessage('');
     setEdit(null);
   }
-  function courseButton(group, day) {
-    const course = group.courses[0];
+  function mobileCourseItem(course) {
+    const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
+    const span = course.start && course.end ? course.start + '–' + course.end
+      : clockSpan(course.person, course.first, course.last) || periodLabel(course);
+    return h('button', {
+      type: 'button', key: course.id,
+      className: 'tt-m-course tt-color-' + color,
+      onClick: () => open(course),
+      'aria-label': '编辑课程 ' + course.title + ' · ' + PEOPLE[course.person].label,
+    },
+      h('div', { className: 'tt-m-time' },
+        h('strong', null, periodLabel(course)),
+        h('small', null, span)),
+      h('div', { className: 'tt-m-body' },
+        h('strong', null, course.title),
+        h('span', null, [person === 'both' ? PEOPLE[course.person].short : '', course.room, course.teacher]
+          .filter(Boolean).join(' · ')),
+        h('small', null, '第 ' + course.weekText + ' 周 · ' + PARITY[course.parity])));
+  }
+  function courseButton(group, day) {    const course = group.courses[0];
     const extra = group.courses.length - 1;
     const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
     const singlePeriod = guet && group.first === group.last;
@@ -453,6 +598,31 @@ export function TimetablePage({ collection }) {
         + ' · 第 ' + course.weekText + ' 周 · ' + PARITY[course.parity])),
     h(Button, { onClick: () => open(course), 'aria-label': '管理课程 ' + course.title }, '编辑'))))
     : h('p', null, '添加后可以在这里编辑任意周次的课程。');
+  const dayCourses = current.filter(course => course.day === activeDay)
+    .sort((a, b) => a.first - b.first || courseOrder(a, b));
+  const mobileSchedule = h('div', { className: 'tt-mobile' },
+    h('div', { className: 'tt-day-chips', role: 'tablist', 'aria-label': '查看哪一天' },
+      days.map(day => h('button', {
+        key: day.date, type: 'button', role: 'tab', 'aria-selected': day.day === activeDay,
+        className: 'tt-day-chip' + (day.day === activeDay ? ' active' : '') + (day.date === today ? ' today' : ''),
+        onClick: () => setDate(day.date),
+      }, h('small', null, day.label), h('strong', null, day.date.slice(8))))),
+    h('div', { className: 'tt-day-timeline' },
+      dayCourses.length ? dayCourses.map(mobileCourseItem)
+        : h('div', { className: 'tt-m-empty' }, DAYS[activeDay] + '这一天没有课'),
+      h('button', { type: 'button', className: 'tt-add-day', onClick: () => add() }, '＋ 添加这一天的课程')));
+  const weekGrid = h('div', { className: 'tt-calendar-scroll' }, h('div', { className: 'tt-week-grid', 'aria-label': '每周课表', style: { '--tt-periods': lastPeriod } },
+      h('div', { className: 'tt-column-head tt-axis-head' }, h('span', null, '日期'), h('small', null, guet ? '时间' : '节次')),
+      days.map(day => h('div', {
+        key: day.date, className: 'tt-column-head' + (day.date === today ? ' tt-today' : ''),
+        style: { gridColumn: day.day + 2 }, 'aria-current': day.date === today ? 'date' : undefined,
+      }, h('strong', null, day.label), h('small', null, guet ? day.date.slice(5).split('-').map(Number).join('/') : shortDate(day.date)))),
+      slotGroups.map(({ first, last, times }) => h(R.Fragment, { key: first },
+        h('div', { className: 'tt-row-line', 'aria-hidden': true, style: { gridRow: (first + 1) + ' / ' + (last + 2) } }),
+        h('div', { className: 'tt-period', style: { gridRow: (first + 1) + ' / ' + (last + 2) } },
+          h('strong', null, first === last ? '第' + first + '节' : first + '–' + last),
+          times.map(time => h('small', { key: time }, time))))),
+      days.flatMap(day => groupsOn(day.day).map(group => courseButton(group, day.day)))));
   return h('section', { className: 'tt-page' + (guet ? ' tt-guet' : ''), 'aria-labelledby': 'tt-title' },
     h('header', { className: 'tt-weekbar' },
       h('div', { className: 'tt-week-range' },
@@ -483,18 +653,7 @@ export function TimetablePage({ collection }) {
     !people.some(key => terms[key]) && h('div', { className: 'tt-intro' },
       h('strong', null, '从第一教学周开始'),
       h('p', null, '先为两所学校分别设置第一教学周的星期一，再录入课程。两人开学日期不同时，教学周会分别计算。')),
-    h('div', { className: 'tt-calendar-scroll' }, h('div', { className: 'tt-week-grid', 'aria-label': '每周课表', style: { '--tt-periods': lastPeriod } },
-      h('div', { className: 'tt-column-head tt-axis-head' }, h('span', null, '日期'), h('small', null, guet ? '时间' : '节次')),
-      days.map(day => h('div', {
-        key: day.date, className: 'tt-column-head' + (day.date === today ? ' tt-today' : ''),
-        style: { gridColumn: day.day + 2 }, 'aria-current': day.date === today ? 'date' : undefined,
-      }, h('strong', null, day.label), h('small', null, guet ? day.date.slice(5).split('-').map(Number).join('/') : shortDate(day.date)))),
-      slotGroups.map(({ first, last, times }) => h(R.Fragment, { key: first },
-        h('div', { className: 'tt-row-line', 'aria-hidden': true, style: { gridRow: (first + 1) + ' / ' + (last + 2) } }),
-        h('div', { className: 'tt-period', style: { gridRow: (first + 1) + ' / ' + (last + 2) } },
-          h('strong', null, first === last ? '第' + first + '节' : first + '–' + last),
-          times.map(time => h('small', { key: time }, time))))),
-      days.flatMap(day => groupsOn(day.day).map(group => courseButton(group, day.day))))),
+    narrow ? mobileSchedule : weekGrid,
     h('details', { className: 'tt-manager' }, h('summary', null, '课程管理 · ' + listed.length + ' 条'), manager),
     removed && h('div', { className: 'ld-notice', role: 'status' }, '已删除「' + removed.title + '」',
       h(Button, { onClick: () => { if (mutate(removed.id, removed)) { setRemoved(null); setMessage('课程已恢复'); } } }, '撤销删除')),
