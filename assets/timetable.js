@@ -104,30 +104,30 @@ const TT_BUILTIN = {
   girl: {
     term: { label: '2026–2027 学年第一学期', firstMonday: '2026-09-07', length: 20 },
     courses: [
-      { title: '工程优化方法及应用', day: 0, first: 1, last: 4, start: '07:40', end: '11:25', weekText: '3', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '工程伦理', day: 0, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '4', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '分子影像概论', day: 0, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-3', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '生物医学图像处理', day: 0, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '专业前沿研讨', day: 1, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '电子系统综合设计', day: 1, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '建模与仿真', day: 1, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '学术道德规范', day: 1, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
-      { title: '现代传感器技术', day: 1, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '2-5,7-10', parity: 'all', room: '生医工大楼B103', teacher: '' },
-      { title: '生物医学图像处理', day: 2, first: 1, last: 2, start: '07:40', end: '09:20', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '分子影像概论', day: 2, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '2-5,7-8', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '学术道德规范', day: 2, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '12-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
-      { title: '建模与仿真', day: 2, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '现代信号处理', day: 2, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '学术论文写作指导', day: 2, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '电子系统综合设计', day: 3, first: 5, last: 6, start: '14:30', end: '16:10', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '学术道德规范', day: 3, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
-      { title: '学术道德规范', day: 3, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '14-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
-      { title: '现代信号处理', day: 3, first: 7, last: 8, start: '16:35', end: '18:15', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '现代传感器技术', day: 4, first: 3, last: 4, start: '09:45', end: '11:25', weekText: '2-3,6-10,12', parity: 'all', room: '生医B301', teacher: '' },
-      { title: '分子影像概论', day: 5, first: 5, last: 10, start: '14:30', end: '21:00', weekText: '6-7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
-      { title: '工程优化方法及应用', day: 5, first: 5, last: 8, start: '14:30', end: '18:15', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '工程伦理', day: 5, first: 9, last: 10, start: '19:20', end: '21:00', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
-      { title: '分子影像概论', day: 6, first: 1, last: 4, start: '07:40', end: '11:25', weekText: '7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '工程优化方法及应用', day: 0, first: 1, last: 4, start: '08:00', end: '11:30', weekText: '3', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '工程伦理', day: 0, first: 3, last: 4, start: '09:50', end: '11:30', weekText: '4', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '分子影像概论', day: 0, first: 5, last: 6, start: '14:00', end: '15:40', weekText: '2-3', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '生物医学图像处理', day: 0, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '专业前沿研讨', day: 1, first: 3, last: 4, start: '09:50', end: '11:30', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '电子系统综合设计', day: 1, first: 5, last: 6, start: '14:00', end: '15:40', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '建模与仿真', day: 1, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '学术道德规范', day: 1, first: 9, last: 10, start: '18:30', end: '20:10', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '现代传感器技术', day: 1, first: 9, last: 10, start: '18:30', end: '20:10', weekText: '2-5,7-10', parity: 'all', room: '生医工大楼B103', teacher: '' },
+      { title: '生物医学图像处理', day: 2, first: 1, last: 2, start: '08:00', end: '09:40', weekText: '2-5,7-10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '分子影像概论', day: 2, first: 3, last: 4, start: '09:50', end: '11:30', weekText: '2-5,7-8', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '学术道德规范', day: 2, first: 5, last: 6, start: '14:00', end: '15:40', weekText: '12-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
+      { title: '建模与仿真', day: 2, first: 5, last: 6, start: '14:00', end: '15:40', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '现代信号处理', day: 2, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '学术论文写作指导', day: 2, first: 9, last: 10, start: '18:30', end: '20:10', weekText: '2-5,7-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '电子系统综合设计', day: 3, first: 5, last: 6, start: '14:00', end: '15:40', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '学术道德规范', day: 3, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '学术道德规范', day: 3, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '14-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
+      { title: '现代信号处理', day: 3, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '现代传感器技术', day: 4, first: 3, last: 4, start: '09:50', end: '11:30', weekText: '2-3,6-10,12', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '分子影像概论', day: 5, first: 5, last: 10, start: '14:00', end: '20:10', weekText: '6-7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
+      { title: '工程优化方法及应用', day: 5, first: 5, last: 8, start: '14:00', end: '17:30', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '工程伦理', day: 5, first: 9, last: 10, start: '18:30', end: '20:10', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '分子影像概论', day: 6, first: 1, last: 4, start: '08:00', end: '11:30', weekText: '7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
     ],
   },
   boy: {
@@ -138,7 +138,6 @@ const TT_BUILTIN = {
       { title: '光电探测及系统', day: 4, first: 7, last: 8, start: '', end: '', weekText: '6-17', parity: 'all', room: '学院实验室', teacher: '游道通' },
       { title: 'AI赋能光子学应用', day: 3, first: 9, last: 10, start: '', end: '', weekText: '6-13', parity: 'all', room: '花江慧谷2号楼2-311会议室', teacher: '王东辉' },
       { title: 'AI赋能光子学应用', day: 5, first: 9, last: 10, start: '', end: '', weekText: '5-12', parity: 'all', room: '花江慧谷2号楼2-311会议室', teacher: '王东辉' },
-      { title: '研究生的压力应对与健康心理', day: 6, first: 11, last: 11, start: '', end: '', weekText: '5-11', parity: 'all', room: '网络课程，关注研究生院后续通知。', teacher: '方正泓' },
     ],
   },
 };
@@ -155,10 +154,18 @@ function builtinId(firstMonday, parts) {
 
 function planBuiltinSeeds(items) {
   const records = items.filter(usable);
+  const changes = [];
+  // 迁移（v0.7.7）：删除桂电第 11 节网课「研究生的压力应对与健康心理」。
+  for (const record of records) {
+    if (record.type === 'course' && record.person === 'boy'
+      && record.title === '研究生的压力应对与健康心理'
+      && record.day === 6 && record.first === 11 && record.last === 11 && record.weekText === '5-11') {
+      changes.push({ id: record.id, value: null });
+    }
+  }
   const existingKeys = new Set(records.filter(record => record.type === 'course').map(record =>
     JSON.stringify([record.person, record.title, record.day, record.first, record.last,
       parseWeeks(record.weekText, record.parity)])));
-  const changes = [];
   for (const [person, pack] of Object.entries(TT_BUILTIN)) {
     const term = records.find(record => record.id === 'term-' + person);
     // 学期已按其他日期设置时跳过整校数据，避免周次对不上。
@@ -175,7 +182,12 @@ function planBuiltinSeeds(items) {
         parseWeeks(course.weekText, course.parity)]);
       const id = builtinId(firstMonday,
         [person, course.title, course.day, course.first, course.last, course.weekText, course.parity, course.room]);
-      if (existingKeys.has(key) || records.some(record => record.id === id)) continue;
+      const existing = records.find(record => record.id === id);
+      // 迁移（v0.7.7）：海大启用创新研学谷作息，同 id 记录只校准钟点，不动用户其他改动。
+      if (existing && (existing.start !== course.start || existing.end !== course.end)) {
+        changes.push({ id, value: { ...existing, start: course.start, end: course.end } });
+      }
+      if (existingKeys.has(key) || existing) continue;
       existingKeys.add(key);
       changes.push({ id, value: { ...course, id, type: 'course', person } });
     }
@@ -373,18 +385,27 @@ function ImportEditor({ initialPerson, terms, courses, close, save }) {
       busy ? '正在保存…' : preview ? '确认导入 ' + preview.additions.length + ' 条' : '预览导入')));
 }
 
-// 桂电每个时段两行：两节课的开始/结束时间；最后一行为第 11 节。
+// 桂电每个时段两行：两节课的开始/结束时间（共 10 节）。
 const GUET_TIMES = [
   '08:25 09:10 09:15 10:00', '10:25 11:10 11:15 12:00',
   '14:30 15:15 15:20 16:05', '16:30 17:15 17:20 18:05',
-  '19:30 20:15 20:25 21:10', '21:20 22:05',
+  '19:30 20:15 20:25 21:10',
 ];
-// 海大（11 节）每节课的开始/结束时间。
+// 海大（创新研学谷教学区，12 节）每节课的开始/结束时间。
 const HAINAN_TIMES = [
-  '07:40 08:25', '08:35 09:20', '09:45 10:30', '10:40 11:25',
-  '14:30 15:15', '15:25 16:10', '16:35 17:20', '17:30 18:15',
-  '19:20 20:05', '20:15 21:00', '21:10 21:55',
+  '08:00 08:45', '08:55 09:40', '09:50 10:35', '10:45 11:30',
+  '14:00 14:45', '14:55 15:40', '15:50 16:35', '16:45 17:30',
+  '18:30 19:15', '19:25 20:10', '20:20 21:05', '21:15 22:00',
 ];
+function pairTimes(flat) {
+  const rows = [];
+  for (let index = 0; index < flat.length; index += 2) {
+    rows.push(flat[index + 1] ? flat[index] + ' ' + flat[index + 1] : flat[index]);
+  }
+  return rows;
+}
+// 单人网格视图每行（两节）展示的钟点。
+const GRID_ROWS = { boy: GUET_TIMES, girl: pairTimes(HAINAN_TIMES) };
 const PERIOD_TIMES = { boy: [], girl: HAINAN_TIMES };
 for (const row of GUET_TIMES) {
   const parts = row.split(' ');
@@ -424,7 +445,7 @@ export function TimetablePage({ collection }) {
   const menu = R.useRef(null);
   const { items, status, mutate, mutateMany, retry } = collection;
   const records = items.filter(usable);
-  const guet = person === 'boy';
+  const grid = person !== 'both';
   const people = person === 'both' ? Object.keys(PEOPLE) : [person];
   const terms = Object.fromEntries(Object.keys(PEOPLE).map(key =>
     [key, records.find(record => record.id === 'term-' + key)]));
@@ -436,8 +457,8 @@ export function TimetablePage({ collection }) {
   const listed = courses.filter(course => people.includes(course.person));
   const current = listed.filter(course => parseWeeks(course.weekText, course.parity).includes(weeks[course.person]));
   const activeDay = dayIndex(date);
-  const lastPeriod = Math.max(10, ...(guet ? current : listed).map(course => course.last));
-  const slotsPerRow = person === 'girl' ? 1 : 2;
+  const lastPeriod = Math.max(10, ...(grid ? current : listed).map(course => course.last));
+  const slotsPerRow = 2;
   const slotGroups = Array.from({ length: Math.ceil(lastPeriod / slotsPerRow) }, (_, index) => {
     const first = index * slotsPerRow + 1;
     const last = Math.min(first + slotsPerRow - 1, lastPeriod);
@@ -449,7 +470,8 @@ export function TimetablePage({ collection }) {
         if (values.size === 1) times.push(...values);
       }
     }
-    return { first, last, times: guet && GUET_TIMES[index] ? GUET_TIMES[index].split(' ') : [...new Set(times)].sort() };
+    const rowTimes = grid && GRID_ROWS[person] && GRID_ROWS[person][index];
+    return { first, last, times: rowTimes ? rowTimes.split(' ') : [...new Set(times)].sort() };
   });
   const jumpToDate = event => {
     if (validDate(event.target.value)) setDate(event.target.value);
@@ -527,7 +549,7 @@ export function TimetablePage({ collection }) {
   function courseButton(group, day) {    const course = group.courses[0];
     const extra = group.courses.length - 1;
     const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
-    const singlePeriod = guet && group.first === group.last;
+    const singlePeriod = grid && group.first === group.last;
     return h('button', {
       type: 'button', key: course.id + '-' + group.first,
       className: 'tt-course tt-color-' + color + (singlePeriod ? ' tt-course-single' : ''),
@@ -537,8 +559,8 @@ export function TimetablePage({ collection }) {
         : '编辑课程 ' + course.title + ' · ' + PEOPLE[course.person].label,
     }, h('strong', null, course.title),
     !singlePeriod && course.room && h('span', { className: 'tt-room' }, course.room),
-    !guet && course.teacher && h('span', null, course.teacher),
-    h('small', null, extra ? '+' + extra + ' 门' : guet ? course.start || periodLabel(course)
+    !grid && course.teacher && h('span', null, course.teacher),
+    h('small', null, extra ? '+' + extra + ' 门' : grid ? course.start || periodLabel(course)
       : (person === 'both' ? PEOPLE[course.person].short + ' · ' : '') + courseTime(course)));
   }
   function groupsOn(day) {
@@ -554,7 +576,7 @@ export function TimetablePage({ collection }) {
       }
     }
     return groups.flatMap(group => {
-      if (!guet) return [{ ...group, courses: group.items }];
+      if (!grid) return [{ ...group, courses: group.items }];
       const blocks = [];
       for (let first = group.first; first <= group.last;) {
         const last = Math.min(group.last, first + first % 2);
@@ -612,18 +634,18 @@ export function TimetablePage({ collection }) {
         : h('div', { className: 'tt-m-empty' }, DAYS[activeDay] + '这一天没有课'),
       h('button', { type: 'button', className: 'tt-add-day', onClick: () => add() }, '＋ 添加这一天的课程')));
   const weekGrid = h('div', { className: 'tt-calendar-scroll' }, h('div', { className: 'tt-week-grid', 'aria-label': '每周课表', style: { '--tt-periods': lastPeriod } },
-      h('div', { className: 'tt-column-head tt-axis-head' }, h('span', null, '日期'), h('small', null, guet ? '时间' : '节次')),
+      h('div', { className: 'tt-column-head tt-axis-head' }, h('span', null, '日期'), h('small', null, grid ? '时间' : '节次')),
       days.map(day => h('div', {
         key: day.date, className: 'tt-column-head' + (day.date === today ? ' tt-today' : ''),
         style: { gridColumn: day.day + 2 }, 'aria-current': day.date === today ? 'date' : undefined,
-      }, h('strong', null, day.label), h('small', null, guet ? day.date.slice(5).split('-').map(Number).join('/') : shortDate(day.date)))),
+      }, h('strong', null, day.label), h('small', null, grid ? day.date.slice(5).split('-').map(Number).join('/') : shortDate(day.date)))),
       slotGroups.map(({ first, last, times }) => h(R.Fragment, { key: first },
         h('div', { className: 'tt-row-line', 'aria-hidden': true, style: { gridRow: (first + 1) + ' / ' + (last + 2) } }),
         h('div', { className: 'tt-period', style: { gridRow: (first + 1) + ' / ' + (last + 2) } },
           h('strong', null, first === last ? '第' + first + '节' : first + '–' + last),
           times.map(time => h('small', { key: time }, time))))),
       days.flatMap(day => groupsOn(day.day).map(group => courseButton(group, day.day)))));
-  return h('section', { className: 'tt-page' + (guet ? ' tt-guet' : ''), 'aria-labelledby': 'tt-title' },
+  return h('section', { className: 'tt-page' + (grid ? ' tt-guet' : ''), 'aria-labelledby': 'tt-title' },
     h('header', { className: 'tt-weekbar' },
       h('div', { className: 'tt-week-range' },
         h('h2', { id: 'tt-title' }, (visibleWeeks.length === 1 ? '第' + visibleWeeks[0] + '周' : '周课表') + ' ' + date.split('-').map(Number).join('/')),
