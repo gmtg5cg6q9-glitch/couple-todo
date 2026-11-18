@@ -98,11 +98,11 @@ export function findConflicts(course, others) {
 
 const PARITY = { all: '每周', odd: '单周', even: '双周' };
 
-// 两校本学期课表（按学校教务系统导出整理）。首教学周：海大 2026-09-07、桂电 2026-09-14。
+// 两校本学期课表（按学校教务系统导出整理）。首教学周：海大 2026-08-31、桂电 2026-09-14。
 // 仅用于首次引导：只补缺、不覆盖；学期已按其他日期设置时跳过，避免周次错位。
 const TT_BUILTIN = {
   girl: {
-    term: { label: '2026–2027 学年第一学期', firstMonday: '2026-09-07', length: 20 },
+    term: { label: '2026–2027 学年第一学期', firstMonday: '2026-08-31', length: 20 },
     courses: [
       { title: '工程优化方法及应用', day: 0, first: 1, last: 4, start: '08:00', end: '11:30', weekText: '3', parity: 'all', room: '生医B302', teacher: '' },
       { title: '工程伦理', day: 0, first: 3, last: 4, start: '09:50', end: '11:30', weekText: '4', parity: 'all', room: '生医B302', teacher: '' },
@@ -123,7 +123,11 @@ const TT_BUILTIN = {
       { title: '学术道德规范', day: 3, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '12', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
       { title: '学术道德规范', day: 3, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '14-15', parity: 'all', room: '生医B104（阶梯会议室）', teacher: '' },
       { title: '现代信号处理', day: 3, first: 7, last: 8, start: '15:50', end: '17:30', weekText: '2-4,6-10', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '工程伦理', day: 4, first: 1, last: 2, start: '08:00', end: '09:40', weekText: '3,6-8', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '工程伦理', day: 4, first: 1, last: 2, start: '08:00', end: '09:40', weekText: '10-12', parity: 'even', room: '生医B301', teacher: '' },
       { title: '现代传感器技术', day: 4, first: 3, last: 4, start: '09:50', end: '11:30', weekText: '2-3,6-10,12', parity: 'all', room: '生医B301', teacher: '' },
+      { title: '工程优化方法及应用', day: 4, first: 5, last: 8, start: '14:00', end: '17:30', weekText: '3,6-8', parity: 'all', room: '生医B302', teacher: '' },
+      { title: '工程优化方法及应用', day: 4, first: 5, last: 8, start: '14:00', end: '17:30', weekText: '10-12', parity: 'even', room: '生医B302', teacher: '' },
       { title: '分子影像概论', day: 5, first: 5, last: 10, start: '14:00', end: '20:10', weekText: '6-7', parity: 'all', room: '海南大学生物医学工程学院大楼B104', teacher: '' },
       { title: '工程优化方法及应用', day: 5, first: 5, last: 8, start: '14:00', end: '17:30', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
       { title: '工程伦理', day: 5, first: 9, last: 10, start: '18:30', end: '20:10', weekText: '10', parity: 'all', room: '生医B302', teacher: '' },
@@ -168,9 +172,14 @@ function planBuiltinSeeds(items) {
       parseWeeks(record.weekText, record.parity)])));
   for (const [person, pack] of Object.entries(TT_BUILTIN)) {
     const term = records.find(record => record.id === 'term-' + person);
+    // 迁移（v0.7.8）：海大第一教学周由 2026-09-07 更正为 2026-08-31。
+    const girlTermFix = person === 'girl' && term && term.firstMonday === '2026-09-07';
+    if (girlTermFix) {
+      changes.push({ id: term.id, value: { ...term, firstMonday: '2026-08-31' } });
+    }
     // 学期已按其他日期设置时跳过整校数据，避免周次对不上。
-    if (term && term.firstMonday !== pack.term.firstMonday) continue;
-    const firstMonday = term ? term.firstMonday : pack.term.firstMonday;
+    if (term && term.firstMonday !== pack.term.firstMonday && !girlTermFix) continue;
+    const firstMonday = girlTermFix || !term ? pack.term.firstMonday : term.firstMonday;
     if (!term) {
       changes.push({
         id: 'term-' + person,
