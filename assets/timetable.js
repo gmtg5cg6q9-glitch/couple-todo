@@ -415,32 +415,7 @@ function pairTimes(flat) {
 }
 // 单人网格视图每行（两节）展示的钟点。
 const GRID_ROWS = { boy: GUET_TIMES, girl: pairTimes(HAINAN_TIMES) };
-const PERIOD_TIMES = { boy: [], girl: HAINAN_TIMES };
-for (const row of GUET_TIMES) {
-  const parts = row.split(' ');
-  for (let index = 0; index < parts.length; index += 2) {
-    PERIOD_TIMES.boy.push(parts[index] + ' ' + parts[index + 1]);
-  }
-}
-function clockSpan(person, first, last) {
-  const table = PERIOD_TIMES[person];
-  if (!table) return '';
-  const start = table[first - 1], end = table[last - 1];
-  return start && end ? start.split(' ')[0] + '–' + end.split(' ')[1] : '';
-}
-function useNarrowTimetable() {
-  const [narrow, setNarrow] = R.useState(
-    typeof window < 'u' ? window.matchMedia('(max-width: 760px)').matches : false);
-  R.useEffect(() => {
-    const query = window.matchMedia('(max-width: 760px)');
-    const onChange = event => setNarrow(event.matches);
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
-  }, []);
-  return narrow;
-}
 export function TimetablePage({ collection }) {
-  const narrow = useNarrowTimetable();
   const [person, setPerson] = R.useState(() => collection.items.some(item => item.id === 'term-girl')
     && !collection.items.some(item => item.id === 'term-boy') ? 'girl' : 'boy');
   const [date, setDate] = R.useState(todayInChina);
@@ -536,25 +511,6 @@ export function TimetablePage({ collection }) {
     setMessage('');
     setEdit(null);
   }
-  function mobileCourseItem(course) {
-    const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
-    const span = course.start && course.end ? course.start + '–' + course.end
-      : clockSpan(course.person, course.first, course.last) || periodLabel(course);
-    return h('button', {
-      type: 'button', key: course.id,
-      className: 'tt-m-course tt-color-' + color,
-      onClick: () => open(course),
-      'aria-label': '编辑课程 ' + course.title + ' · ' + PEOPLE[course.person].label,
-    },
-      h('div', { className: 'tt-m-time' },
-        h('strong', null, periodLabel(course)),
-        h('small', null, span)),
-      h('div', { className: 'tt-m-body' },
-        h('strong', null, course.title),
-        h('span', null, [person === 'both' ? PEOPLE[course.person].short : '', course.room, course.teacher]
-          .filter(Boolean).join(' · ')),
-        h('small', null, '第 ' + course.weekText + ' 周 · ' + PARITY[course.parity])));
-  }
   function courseButton(group, day) {    const course = group.courses[0];
     const extra = group.courses.length - 1;
     const color = [...course.title].reduce((sum, letter) => (sum + letter.codePointAt(0)) % 5, 0);
@@ -629,19 +585,6 @@ export function TimetablePage({ collection }) {
         + ' · 第 ' + course.weekText + ' 周 · ' + PARITY[course.parity])),
     h(Button, { onClick: () => open(course), 'aria-label': '管理课程 ' + course.title }, '编辑'))))
     : h('p', null, '添加后可以在这里编辑任意周次的课程。');
-  const dayCourses = current.filter(course => course.day === activeDay)
-    .sort((a, b) => a.first - b.first || courseOrder(a, b));
-  const mobileSchedule = h('div', { className: 'tt-mobile' },
-    h('div', { className: 'tt-day-chips', role: 'tablist', 'aria-label': '查看哪一天' },
-      days.map(day => h('button', {
-        key: day.date, type: 'button', role: 'tab', 'aria-selected': day.day === activeDay,
-        className: 'tt-day-chip' + (day.day === activeDay ? ' active' : '') + (day.date === today ? ' today' : ''),
-        onClick: () => setDate(day.date),
-      }, h('small', null, day.label), h('strong', null, day.date.slice(8))))),
-    h('div', { className: 'tt-day-timeline' },
-      dayCourses.length ? dayCourses.map(mobileCourseItem)
-        : h('div', { className: 'tt-m-empty' }, DAYS[activeDay] + '这一天没有课'),
-      h('button', { type: 'button', className: 'tt-add-day', onClick: () => add() }, '＋ 添加这一天的课程')));
   const weekGrid = h('div', { className: 'tt-calendar-scroll' }, h('div', { className: 'tt-week-grid', 'aria-label': '每周课表', style: { '--tt-periods': lastPeriod } },
       h('div', { className: 'tt-column-head tt-axis-head' }, h('span', null, '日期'), h('small', null, grid ? '时间' : '节次')),
       days.map(day => h('div', {
@@ -684,7 +627,7 @@ export function TimetablePage({ collection }) {
     !people.some(key => terms[key]) && h('div', { className: 'tt-intro' },
       h('strong', null, '从第一教学周开始'),
       h('p', null, '先为两所学校分别设置第一教学周的星期一，再录入课程。两人开学日期不同时，教学周会分别计算。')),
-    narrow ? mobileSchedule : weekGrid,
+    weekGrid,
     h('details', { className: 'tt-manager' }, h('summary', null, '课程管理 · ' + listed.length + ' 条'), manager),
     removed && h('div', { className: 'ld-notice', role: 'status' }, '已删除「' + removed.title + '」',
       h(Button, { onClick: () => { if (mutate(removed.id, removed)) { setRemoved(null); setMessage('课程已恢复'); } } }, '撤销删除')),
